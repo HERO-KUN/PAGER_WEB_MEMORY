@@ -1,26 +1,36 @@
 var pagermemory_pagers = {};
-var PAGERMEMORY_PAGE_ANIMATE_DURATION = 350;
-var PAGERMEMORY_SCROLL_AMOUNT = 5;
+var PAGERMEMORY_PAGE_ANIMATE_DURATION = 320;
+var PAGERMEMORY_SCROLL_AMOUNT = 6;
 
-function pagermemory_registerPager(name, pagerElement){
+function pagermemory_registerPager(name, pagerElement, options){
   pagermemory_pagers[name] = {
     name: name,
     object: pagerElement,
     items: [],
-    childCount: 0,
+    pageCount: 0,
     selected: 0,
-    animating: false,
-    offset: 0,
+    options: options,
     size: pagermemory_getSize(pagerElement),
-    listener: function() {}
+    listener: function() {},
+    flags: {
+      animating: false,
+      pointerDown: false,
+      scrollLeft: 0,
+      beforePos: 0,
+      pointerEventStartPos: [0, 0]
+    }
   }
   pagermemory_setup(pagermemory_pagers[name]);
-  pagermemory_setPage(pagermemory_pagers[name], 0);
+  pagermemory_setPage(pagermemory_pagers[name], options.useOverscroll ? 1 : 0);
   return pagermemory_pagers[name];
 }
 
 function pagermemory_setup(pager){
   pager.object.style.overflow = 'hidden';
+  if(pager.options.useOverscroll){
+    pager.object.insertBefore(document.createElement('div'), pager.object.childNodes[0]);
+    pager.object.appendChild(document.createElement('div'));
+  }
   var childs = pager.object.childNodes;
   var childIndex = 0;
   for (var i = 0; i < childs.length; i++) {
@@ -37,15 +47,66 @@ function pagermemory_setup(pager){
     pager.items.push(each);
     childIndex++;
   }
+
   pager.pageCount = childIndex;
   pager.object.addEventListener('scroll', function(e){
     var MAX_SCROLL_X = pager.size[0] / PAGERMEMORY_SCROLL_AMOUNT * (pager.pageCount - 1);
     for(var itemIndex = 0; itemIndex < pager.pageCount; itemIndex++){
-      pager.items[itemIndex].style.opacity = Math.max((-1) * Math.pow(((pager.pageCount - 1) * 2 / MAX_SCROLL_X * pager.object.scrollLeft) - 2 * itemIndex, 2) + 1, 0);
+      if(pager.object.scrollLeft >= pager.size[0]/PAGERMEMORY_SCROLL_AMOUNT && pager.object.scrollLeft <= pager.size[0]/PAGERMEMORY_SCROLL_AMOUNT * (pager.pageCount - 2))
+        pager.items[itemIndex].style.opacity = Math.max((-1) * Math.pow(((pager.pageCount - 1) * 2 / MAX_SCROLL_X * pager.object.scrollLeft) - 2 * itemIndex, 2) + 1, 0);
+
       if(pager.items[itemIndex].style.opacity < 0.5) pager.items[itemIndex].style.pointerEvents = 'none';
       else pager.items[itemIndex].style.pointerEvents = 'all';
     }
   });
+
+  if(pager.options.usePointerEvent){
+
+    var pointerDown = function(x, y) {
+      if(pager.flags.animating) return;
+      pager.flags.pointerDown = true;
+      pager.flags.beforePos = pager.object.scrollLeft;
+      pager.flags.pointerEventStartPos = [x, y];
+    };
+
+    var pointerMove = function(x, y) {
+      if(pager.flags.animating) return;
+      if(!pager.flags.pointerDown) return;
+      if(pager.object.scrollLeft >= pager.size[0]/PAGERMEMORY_SCROLL_AMOUNT && pager.object.scrollLeft <= pager.size[0]/PAGERMEMORY_SCROLL_AMOUNT * (pager.pageCount - 2))
+        pager.object.scrollLeft = pager.flags.beforePos + (pager.flags.pointerEventStartPos[0] - x)/PAGERMEMORY_SCROLL_AMOUNT;
+      else
+        pager.object.scrollLeft = pager.flags.beforePos + (pager.flags.pointerEventStartPos[0] - x)/PAGERMEMORY_SCROLL_AMOUNT/2.5;
+      pager.flags.scrollLeft = pager.object.scrollLeft;
+    }
+
+    var pointerUp = function(){
+      if(pager.flags.animating) return;
+      var MAX_PAGE = ((pager.options.useOverscroll) ? pager.pageCount - 2 : pager.pageCount - 1);
+      var MIN_PAGE = ((pager.options.useOverscroll) ? 1 : 0);
+      var AMOUNT = pager.selected * pager.size[0]/PAGERMEMORY_SCROLL_AMOUNT - pager.flags.scrollLeft;
+      if(AMOUNT > 15 && pager.selected != MIN_PAGE){
+        pagermemory_animatePage(pager, pager.selected - 1);
+        pager.selected--;
+      }else if(AMOUNT < -15 && pager.selected != MAX_PAGE){
+        pagermemory_animatePage(pager, pager.selected + 1);
+        pager.selected++;
+      }else{
+        pagermemory_animatePage(pager, pager.selected);
+      }
+      pager.flags.pointerDown = false;
+      pager.flags.beforePos = 0;
+      pager.flags.pointerEventStartPos = [0, 0];
+    }
+
+    pager.object.addEventListener('mousedown', function(event) { pointerDown(event.pageX, event.pageY) });
+    pager.object.addEventListener('mousemove', function(event) { pointerMove(event.pageX, event.pageY); });
+    window.addEventListener('mouseup', function(event) { pointerUp() });
+
+    pager.object.addEventListener('touchstart', function(event) { pointerDown(event.touches[0].clientX, event.touches[0].clientY); });
+    pager.object.addEventListener('touchmove', function(event) { pointerMove(event.touches[0].clientX, event.touches[0].clientY); });
+    window.addEventListener('touchend', function(event) { pointerUp(); });
+
+  }
 }
 
 /** @description Sets pager page without any animations.
@@ -58,24 +119,26 @@ function pagermemory_setPage(pager, pageIndex){
     pager.items[childIndex].style.pointerEvents = (childIndex == pageIndex) ? 'all' : 'none';
   }
   pager.object.scrollLeft = pager.size[0] / PAGERMEMORY_SCROLL_AMOUNT * pageIndex;
+  pager.flags.scrollLeft = pager.size[0] / PAGERMEMORY_SCROLL_AMOUNT * pageIndex;
   pager.selected = pageIndex;
 }
 
 function pagermemory_animatePage(pager, pageIndex){
-  if(pager.animating) return;
-  pager.animating = true;
-  pagermemory_animate(pager.offset, pager.size[0] / PAGERMEMORY_SCROLL_AMOUNT * pageIndex, 500,
+  if(pager.flags.animating) return;
+  pager.flags.animating = true;
+  pagermemory_animate(pager.flags.scrollLeft, pager.size[0] / PAGERMEMORY_SCROLL_AMOUNT * pageIndex, PAGERMEMORY_PAGE_ANIMATE_DURATION,
     function(animatedValue){
       pager.object.scrollLeft = animatedValue;
     },
     function(){
-      pager.offset = pager.size[0] / PAGERMEMORY_SCROLL_AMOUNT * pageIndex;
-      pager.animating = false;
+      pager.flags.scrollLeft = pager.size[0] / PAGERMEMORY_SCROLL_AMOUNT * pageIndex;
+      pager.flags.animating = false;
     }
-  )
+  );
 }
 
 function pagermemory_animate(from, to, duration, step, finish){
+  if(from == to)  { finish(); return; }
   var progress = 0;
   var animatedValue = from;
   var DELTA = Math.abs(to - from);
@@ -83,7 +146,7 @@ function pagermemory_animate(from, to, duration, step, finish){
   var STEP_LENGTH_MS = 10;
   var STEP_LENGTH = Math.sqrt(DELTA)/(duration/STEP_LENGTH_MS);
   var animate = function(){
-    if(duration == progress * STEP_LENGTH_MS) {
+    if(duration <= progress * STEP_LENGTH_MS) {
       step(to);
       finish();
       return;
