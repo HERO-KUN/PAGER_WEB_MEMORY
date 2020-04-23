@@ -2,6 +2,12 @@ var pagermemory_pagers = {};
 var PAGERMEMORY_PAGE_ANIMATE_DURATION = 320;
 var PAGERMEMORY_SCROLL_AMOUNT = 6;
 
+/** @description Regiester a pager element to script. returns pager object.
+ *  @params {string} name identifier of pager that must be unique
+ *  @params {element} pagerElement target pager element to regiester
+ *  @params {object} options options of pager
+ *  @return {object}
+ */
 function pagermemory_registerPager(name, pagerElement, options){
   pagermemory_pagers[name] = {
     name: name,
@@ -15,9 +21,21 @@ function pagermemory_registerPager(name, pagerElement, options){
     flags: {
       animating: false,
       pointerDown: false,
-      scrollLeft: 0,
+      value: 0,
       beforePos: 0,
       pointerEventStartPos: [0, 0]
+    },
+    selectPage: function(target, animate){
+      pagermemory_selectPage(this, target, animate);
+    },
+    selectNext: function(animate){
+      pagermemory_selectPage(this, this.options.useOverscroll ? this.selected : this.selected+1, animate);
+    },
+    selectPrev: function(animate){
+      pagermemory_selectPage(this, this.options.useOverscroll ? this.selected-2 : this.selected-1, animate);
+    },
+    getSelectedPageIndex: function(){
+      return ((this.options.useOverscroll) ? this.selected - 1 : this.selected)
     }
   }
   pagermemory_setup(pagermemory_pagers[name]);
@@ -25,6 +43,29 @@ function pagermemory_registerPager(name, pagerElement, options){
   return pagermemory_pagers[name];
 }
 
+/** @description Returns regiestered pager object which has given name.
+ *  @params {string} name pager name to get
+ */
+function pagermemory_getPager(name){
+  return pagermemory_pagers[name];
+}
+
+/** @description Internal call only. Selects page.
+ *  @params {object} pager pager object returned by regiesterPager or getPager
+ *  @params {number} target target page index
+ *  @params {boolean} animate enable page translate animation
+ */
+function pagermemory_selectPage(pager, target, animate){
+  if(target < 0) return;
+  if(pager.options.useOverscroll) target++;
+  if(target > pager.pageCount-(pager.options.useOverscroll ? 2 : 1)) return;
+  if(animate) pagermemory_animatePage(pager, target);
+  else pagermemory_setPage(pager, target);
+}
+
+/** @description Internal call only. Setup the pager.
+ *  @params {object} pager pager object returned by regiesterPager or getPager
+ */
 function pagermemory_setup(pager){
   pager.object.style.overflow = 'hidden';
   if(pager.options.useOverscroll){
@@ -47,18 +88,7 @@ function pagermemory_setup(pager){
     pager.items.push(each);
     childIndex++;
   }
-
   pager.pageCount = childIndex;
-  pager.object.addEventListener('scroll', function(e){
-    var MAX_SCROLL_X = pager.size[0] / PAGERMEMORY_SCROLL_AMOUNT * (pager.pageCount - 1);
-    for(var itemIndex = 0; itemIndex < pager.pageCount; itemIndex++){
-      if(pager.object.scrollLeft >= pager.size[0]/PAGERMEMORY_SCROLL_AMOUNT && pager.object.scrollLeft <= pager.size[0]/PAGERMEMORY_SCROLL_AMOUNT * (pager.pageCount - 2))
-        pager.items[itemIndex].style.opacity = Math.max((-1) * Math.pow(((pager.pageCount - 1) * 2 / MAX_SCROLL_X * pager.object.scrollLeft) - 2 * itemIndex, 2) + 1, 0);
-
-      if(pager.items[itemIndex].style.opacity < 0.5) pager.items[itemIndex].style.pointerEvents = 'none';
-      else pager.items[itemIndex].style.pointerEvents = 'all';
-    }
-  });
 
   if(pager.options.usePointerEvent){
 
@@ -72,24 +102,19 @@ function pagermemory_setup(pager){
     var pointerMove = function(x, y) {
       if(pager.flags.animating) return;
       if(!pager.flags.pointerDown) return;
-      if(pager.object.scrollLeft >= pager.size[0]/PAGERMEMORY_SCROLL_AMOUNT && pager.object.scrollLeft <= pager.size[0]/PAGERMEMORY_SCROLL_AMOUNT * (pager.pageCount - 2))
-        pager.object.scrollLeft = pager.flags.beforePos + (pager.flags.pointerEventStartPos[0] - x)/PAGERMEMORY_SCROLL_AMOUNT;
-      else
-        pager.object.scrollLeft = pager.flags.beforePos + (pager.flags.pointerEventStartPos[0] - x)/PAGERMEMORY_SCROLL_AMOUNT/2.5;
-      pager.flags.scrollLeft = pager.object.scrollLeft;
+      var value = pager.selected + (1/pager.size[0]*(pager.flags.pointerEventStartPos[0] - x));
+      pagermemory_scrollPage(pager, value);
     }
 
     var pointerUp = function(){
       if(pager.flags.animating) return;
       var MAX_PAGE = ((pager.options.useOverscroll) ? pager.pageCount - 2 : pager.pageCount - 1);
       var MIN_PAGE = ((pager.options.useOverscroll) ? 1 : 0);
-      var AMOUNT = pager.selected * pager.size[0]/PAGERMEMORY_SCROLL_AMOUNT - pager.flags.scrollLeft;
-      if(AMOUNT > 15 && pager.selected != MIN_PAGE){
+      var AMOUNT = pager.selected - pager.flags.value;
+      if(AMOUNT > 0.1 && pager.selected != MIN_PAGE){
         pagermemory_animatePage(pager, pager.selected - 1);
-        pager.selected--;
-      }else if(AMOUNT < -15 && pager.selected != MAX_PAGE){
+      }else if(AMOUNT < -0.1 && pager.selected != MAX_PAGE){
         pagermemory_animatePage(pager, pager.selected + 1);
-        pager.selected++;
       }else{
         pagermemory_animatePage(pager, pager.selected);
       }
@@ -109,34 +134,69 @@ function pagermemory_setup(pager){
   }
 }
 
-/** @description Sets pager page without any animations.
+/** @description Internal call only. Sets pager page without any animations.
  *  @params {object} pager pager object returned by regiesterPager or getPager
  *  @params {number} pageIndex target page index
  */
 function pagermemory_setPage(pager, pageIndex){
-  for(var childIndex = 0; childIndex < pager.pageCount; childIndex++){
-    pager.items[childIndex].style.opacity = (childIndex == pageIndex) ? '1' : '0';
-    pager.items[childIndex].style.pointerEvents = (childIndex == pageIndex) ? 'all' : 'none';
-  }
-  pager.object.scrollLeft = pager.size[0] / PAGERMEMORY_SCROLL_AMOUNT * pageIndex;
-  pager.flags.scrollLeft = pager.size[0] / PAGERMEMORY_SCROLL_AMOUNT * pageIndex;
+  pagermemory_scrollPage(pager, pageIndex);
   pager.selected = pageIndex;
 }
 
+/** @description Internal call only. Sets pager page with animation.
+ *  @params {object} pager pager object returned by regiesterPager or getPager
+ *  @params {number} pageIndex target page index
+ */
 function pagermemory_animatePage(pager, pageIndex){
   if(pager.flags.animating) return;
   pager.flags.animating = true;
-  pagermemory_animate(pager.flags.scrollLeft, pager.size[0] / PAGERMEMORY_SCROLL_AMOUNT * pageIndex, PAGERMEMORY_PAGE_ANIMATE_DURATION,
+  pagermemory_animate(pager.flags.value, pageIndex, PAGERMEMORY_PAGE_ANIMATE_DURATION,
     function(animatedValue){
-      pager.object.scrollLeft = animatedValue;
+      pagermemory_scrollPage(pager, animatedValue);
     },
     function(){
-      pager.flags.scrollLeft = pager.size[0] / PAGERMEMORY_SCROLL_AMOUNT * pageIndex;
       pager.flags.animating = false;
     }
   );
+  pager.selected = pageIndex;
 }
 
+/** @description Internal call only. Scrolls pager to target value. target value can be 0 ~ pager.pageCount - 1. float values available.
+ *  @params {object} pager pager object returned by regiesterPager or getPager
+ *  @params {number} value target scroll value
+ */
+function pagermemory_scrollPage(pager, value){
+  if(value > pager.itemCount - 1 || value < 0) return;
+  var scrollAmountPerPage = pager.size[0]/PAGERMEMORY_SCROLL_AMOUNT;
+  var realValue = value - parseInt(value);
+  if(pager.options.useOverscroll && value < 1){
+    pager.object.scrollLeft = scrollAmountPerPage * Math.floor(value) +
+      scrollAmountPerPage * (3 / 4 + realValue / 4);
+  }else if(pager.options.useOverscroll && value > pager.pageCount - 2){
+    pager.object.scrollLeft = scrollAmountPerPage * Math.floor(value) +
+      scrollAmountPerPage / 4 * realValue;
+  }else{
+    pager.object.scrollLeft = scrollAmountPerPage * Math.floor(value) +
+      ((realValue >= 0.5) ?
+        scrollAmountPerPage * ((-32) * Math.pow(realValue - 1, 6) + 1) :
+        scrollAmountPerPage * 32 * Math.pow(realValue, 6));
+  }
+  for(var pageIndex = 0; pageIndex < pager.pageCount; pageIndex++){
+    if(value >= ((pager.options.useOverscroll) ? 1 : 0) && value <= ((pager.options.useOverscroll) ? pager.pageCount - 2 : pager.pageCount - 1)){
+      pager.items[pageIndex].style.opacity = Math.max(-2 * Math.abs(value - pageIndex) + 1, 0);
+    }
+    pager.items[pageIndex].style.pointerEvents = (pager.items[pageIndex].style.opacity < 0.5) ? 'none' : 'all';
+  }
+  pager.flags.value = value;
+}
+
+/** @descrition Internal call only. Animates value linearly.
+ *  @params {number} from start value
+ *  @params {number} to end value
+ *  @params {number} duration animate duration
+ *  @params {function} step function that called every frame
+ *  @params {function} finish function that called when animate finished
+ */
 function pagermemory_animate(from, to, duration, step, finish){
   if(from == to)  { finish(); return; }
   var progress = 0;
@@ -144,14 +204,14 @@ function pagermemory_animate(from, to, duration, step, finish){
   var DELTA = Math.abs(to - from);
   var DIRECTION = (to - from > 0) ? 1 : -1;
   var STEP_LENGTH_MS = 10;
-  var STEP_LENGTH = Math.sqrt(DELTA)/(duration/STEP_LENGTH_MS);
+  var STEP_LENGTH = DELTA/(duration/STEP_LENGTH_MS);
   var animate = function(){
     if(duration <= progress * STEP_LENGTH_MS) {
       step(to);
       finish();
       return;
     }
-    animatedValue = from + DIRECTION * ((-1) * Math.pow(progress * STEP_LENGTH - Math.sqrt(DELTA), 2) + DELTA);
+    animatedValue = from + DIRECTION * STEP_LENGTH * progress;
     step(animatedValue);
     progress++;
     setTimeout(animate, STEP_LENGTH_MS);
@@ -159,6 +219,10 @@ function pagermemory_animate(from, to, duration, step, finish){
   animate();
 }
 
+/** @description Internal call only. Returns size of element.
+ *  @params {element} element target element
+ *  @return {float-array}
+ */
 function pagermemory_getSize(element){
   var rect = element.getBoundingClientRect();
   if(rect.width != 0 && rect.height != 0){
