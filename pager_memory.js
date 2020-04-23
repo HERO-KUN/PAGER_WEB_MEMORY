@@ -60,6 +60,7 @@ function pagermemory_registerPager(name, pagerElement, options){
 
 /** @description Returns regiestered pager object which has given name.
  *  @params {string} name pager name to get
+ *  @return {object}
  */
 function pagermemory_getPager(name){
   return pagermemory_pagers[name];
