@@ -23,7 +23,9 @@ function pagermemory_registerPager(name, pagerElement, options){
       pointerDown: false,
       value: 0,
       beforePos: 0,
-      pointerEventStartPos: [0, 0]
+      pointerEventStartPos: [0, 0],
+      verticalScrolling: false,
+      scrollFixed: false
     },
     selectPage: function(target, animate){
       pagermemory_selectPage(this, target, animate);
@@ -102,6 +104,11 @@ function pagermemory_setup(pager){
     var pointerMove = function(x, y) {
       if(pager.flags.animating) return;
       if(!pager.flags.pointerDown) return;
+      if(!pager.flags.scrollFixed){
+        pager.flags.verticalScrolling = Math.abs(x - pager.flags.pointerEventStartPos[0]) < Math.abs(y - pager.flags.pointerEventStartPos[1]);
+      }
+      pager.flags.scrollFixed = (Math.abs(x - pager.flags.pointerEventStartPos[0]) > 10 || Math.abs(y - pager.flags.pointerEventStartPos[1]) > 10);
+      console.log(pager.flags.scrollFixed);
       var value = pager.selected + (1/pager.size[0]*(pager.flags.pointerEventStartPos[0] - x));
       pagermemory_scrollPage(pager, value);
     }
@@ -121,6 +128,8 @@ function pagermemory_setup(pager){
       pager.flags.pointerDown = false;
       pager.flags.beforePos = 0;
       pager.flags.pointerEventStartPos = [0, 0];
+      pager.flags.verticalScrolling = false;
+      pager.flags.scrollFixed = false;
     }
 
     pager.object.addEventListener('mousedown', function(event) { pointerDown(event.pageX, event.pageY) });
@@ -167,6 +176,7 @@ function pagermemory_animatePage(pager, pageIndex){
  */
 function pagermemory_scrollPage(pager, value){
   if(value > pager.itemCount - 1 || value < 0) return;
+  if(pager.flags.verticalScrolling) return;
   var scrollAmountPerPage = pager.size[0]/PAGERMEMORY_SCROLL_AMOUNT;
   var realValue = value - parseInt(value);
   if(pager.options.useOverscroll && value < 1){
