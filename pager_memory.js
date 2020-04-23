@@ -38,6 +38,9 @@ function pagermemory_registerPager(name, pagerElement, options){
     },
     getSelectedPageIndex: function(){
       return ((this.options.useOverscroll) ? this.selected - 1 : this.selected)
+    },
+    addPage: function(position, element){
+      pagermemory_addPage(this, position, element);
     }
   }
   pagermemory_setup(pager);
@@ -81,23 +84,7 @@ function pagermemory_setup(pager){
     pager.object.insertBefore(document.createElement('div'), pager.object.childNodes[0]);
     pager.object.appendChild(document.createElement('div'));
   }
-  var childs = pager.object.childNodes;
-  var childIndex = 0;
-  for (var i = 0; i < childs.length; i++) {
-    if(childs[i].nodeType != 1) continue;
-    each = childs[i];
-    each.style.overflowY = 'scroll';
-    each.style.position = 'relative';
-    each.style.width = '100%';
-    each.style.height = '100%';
-    each.style.padding = '0';
-    each.style.margin = '0';
-    each.style.top = (childIndex * -100) + '%';
-    each.style.left = (childIndex * (100 / PAGERMEMORY_SCROLL_AMOUNT)) + '%';
-    pager.items.push(each);
-    childIndex++;
-  }
-  pager.pageCount = childIndex;
+  pagermemory_notifyPageUpdated(pager);
 
   if(pager.options.usePointerEvent){
 
@@ -147,6 +134,55 @@ function pagermemory_setup(pager){
     window.addEventListener('touchend', function(event) { pointerUp(); });
 
   }
+}
+
+/** @description Internal call only. Adds page before given position.
+ *  @params {object} pager pager object returned by registerPager or getPager
+ *  @params {number} position
+ *  @params {element} element page object which must be div element
+ */
+function pagermemory_addPage(pager, position, element){
+  if(position < 0) return;
+  if(pager.options.useOverscroll) position++;
+  if(position > pager.pageCount-(pager.options.useOverscroll ? 2 : 1)) {
+    if(!pager.options.useOverscroll){
+      pager.object.appendChild(element);
+    }else{
+      pager.object.insertBefore(element, pager.object.lastChild);
+    }
+  }else{
+    pager.object.insertBefore(element, pager.items[position]);
+  }
+  pagermemory_notifyPageUpdated(pager);
+
+  if(position - (pager.options.useOverscroll ? 1 : 0) > pager.getSelectedPageIndex())
+    pagermemory_setPage(pager, pager.selected);
+  else
+    pagermemory_setPage(pager, pager.selected + 1);
+}
+
+/** @description Internal call only. Re-positions pages and update items and pageCount.
+ *  @params {object} pager pager object returned by registerPager or getPage
+ */
+function pagermemory_notifyPageUpdated(pager){
+  var childs = pager.object.childNodes;
+  var childIndex = 0;
+  pager.items = [];
+  for (var i = 0; i < childs.length; i++) {
+    if(childs[i].nodeType != 1) continue;
+    each = childs[i];
+    each.style.overflowY = 'scroll';
+    each.style.position = 'relative';
+    each.style.width = '100%';
+    each.style.height = '100%';
+    each.style.padding = '0';
+    each.style.margin = '0';
+    each.style.top = (childIndex * -100) + '%';
+    each.style.left = (childIndex * (100 / PAGERMEMORY_SCROLL_AMOUNT)) + '%';
+    pager.items.push(each);
+    childIndex++;
+  }
+  pager.pageCount = childIndex;
 }
 
 /** @description Internal call only. Sets pager page without any animations.
