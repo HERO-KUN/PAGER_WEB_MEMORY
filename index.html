@@ -80,12 +80,12 @@
   </body>
   <script type="text/javascript" src="pager_memory.js"></script>
   <script type="text/javascript">
-    pagermemory_registerPager('main', document.getElementById('main_pager'), {
+    var mainPager = pagermemory_registerPager('main', document.getElementById('main_pager'), {
       useOverscroll: true,
       usePointerEvent: true
     });
-    pagermemory_registerPager('sub', document.getElementById('sub_pager'), {
-      useOverscroll: true,
+    var subPager = pagermemory_registerPager('sub', document.getElementById('sub_pager'), {
+      useOverscroll: false,
       usePointerEvent: true
     });
   </script>
