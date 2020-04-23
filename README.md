@@ -16,6 +16,7 @@ create pager object and its childs(pages) something like this.
 ```
 
 notice that pager object must have its own width and height like % or px etc.   
+pager items(pages) can have its child elements like div, span, etc. so fill the child div of pager as you want.   
 ### javascript
 register pager and store returned object to control pager like below.   
 ```
