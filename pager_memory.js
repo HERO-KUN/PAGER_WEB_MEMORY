@@ -17,7 +17,7 @@ function pagermemory_registerPager(name, pagerElement, options){
     selected: 0,
     options: options,
     size: pagermemory_getSize(pagerElement),
-    listener: function() {},
+    listener: function(page) {},
     flags: {
       animating: false,
       pointerDown: false,
@@ -156,6 +156,7 @@ function pagermemory_setup(pager){
 function pagermemory_setPage(pager, pageIndex){
   pagermemory_scrollPage(pager, pageIndex);
   pager.selected = pageIndex;
+  pager.listener(pager.getSelectedPageIndex());
 }
 
 /** @description Internal call only. Sets pager page with animation.
@@ -174,6 +175,7 @@ function pagermemory_animatePage(pager, pageIndex){
     }
   );
   pager.selected = pageIndex;
+  pager.listener(pager.getSelectedPageIndex());
 }
 
 /** @description Internal call only. Scrolls pager to target value. target value can be 0 ~ pager.pageCount - 1. float values available.
