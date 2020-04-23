@@ -52,5 +52,5 @@ you can get pager object by name like below.
   var mainPager = pagermemory_getPager('main');
 ```
 
-placing and registering multiple pager in one html is ok.
+placing and registering multiple pager in one html is ok.   
 notice that user-select:none css style will neccessary if you support pointer events in desktop platform.
