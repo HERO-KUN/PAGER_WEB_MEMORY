@@ -1,6 +1,6 @@
 var pagermemory_pagers = {};
 var PAGERMEMORY_PAGE_ANIMATE_DURATION = 320;
-var PAGERMEMORY_SCROLL_AMOUNT = 6;
+var PAGERMEMORY_SCROLL_AMOUNT = 8;
 
 /** @description Regiester a pager element to script. returns pager object.
  *  @params {string} name identifier of pager that must be unique
@@ -9,7 +9,7 @@ var PAGERMEMORY_SCROLL_AMOUNT = 6;
  *  @return {object}
  */
 function pagermemory_registerPager(name, pagerElement, options){
-  pagermemory_pagers[name] = {
+  var pager = {
     name: name,
     object: pagerElement,
     items: [],
@@ -40,8 +40,15 @@ function pagermemory_registerPager(name, pagerElement, options){
       return ((this.options.useOverscroll) ? this.selected - 1 : this.selected)
     }
   }
-  pagermemory_setup(pagermemory_pagers[name]);
-  pagermemory_setPage(pagermemory_pagers[name], options.useOverscroll ? 1 : 0);
+  pagermemory_setup(pager);
+  var resize = function(){
+    pager.size = pagermemory_getSize(pager.object);
+    pager.selectPage(pager.getSelectedPageIndex(), false);
+  }
+  window.addEventListener('resize', resize);
+  window.addEventListener('load', resize);
+  pager.selectPage(0);
+  pagermemory_pagers[name] = pager;
   return pagermemory_pagers[name];
 }
 
@@ -85,8 +92,8 @@ function pagermemory_setup(pager){
     each.style.height = '100%';
     each.style.padding = '0';
     each.style.margin = '0';
-    each.style.top = (childIndex * -pager.size[1]) + 'px';
-    each.style.left = (childIndex * (pager.size[0] / PAGERMEMORY_SCROLL_AMOUNT)) + 'px';
+    each.style.top = (childIndex * -100) + '%';
+    each.style.left = (childIndex * (100 / PAGERMEMORY_SCROLL_AMOUNT)) + '%';
     pager.items.push(each);
     childIndex++;
   }
@@ -106,8 +113,8 @@ function pagermemory_setup(pager){
       if(!pager.flags.pointerDown) return;
       if(!pager.flags.scrollFixed){
         pager.flags.verticalScrolling = Math.abs(x - pager.flags.pointerEventStartPos[0]) < Math.abs(y - pager.flags.pointerEventStartPos[1]);
+        pager.flags.scrollFixed = (Math.abs(x - pager.flags.pointerEventStartPos[0]) > 10 || Math.abs(y - pager.flags.pointerEventStartPos[1]) > 10);
       }
-      pager.flags.scrollFixed = (Math.abs(x - pager.flags.pointerEventStartPos[0]) > 10 || Math.abs(y - pager.flags.pointerEventStartPos[1]) > 10);
       var value = pager.selected + (1/pager.size[0]*(pager.flags.pointerEventStartPos[0] - x));
       pagermemory_scrollPage(pager, value);
     }
@@ -187,8 +194,8 @@ function pagermemory_scrollPage(pager, value){
   }else{
     pager.object.scrollLeft = scrollAmountPerPage * Math.floor(value) +
       ((realValue >= 0.5) ?
-        scrollAmountPerPage * ((-32) * Math.pow(realValue - 1, 6) + 1) :
-        scrollAmountPerPage * 32 * Math.pow(realValue, 6));
+        scrollAmountPerPage * ((-128) * Math.pow(realValue - 1, 8) + 1) :
+        scrollAmountPerPage * 128 * Math.pow(realValue, 8));
   }
   for(var pageIndex = 0; pageIndex < pager.pageCount; pageIndex++){
     if(value >= ((pager.options.useOverscroll) ? 1 : 0) && value <= ((pager.options.useOverscroll) ? pager.pageCount - 2 : pager.pageCount - 1)){
