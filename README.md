@@ -24,21 +24,21 @@ register pager and store returned object to control pager like below.
 ```
 
 pagermemory_registerPager have 3 parameters : identifier, pagerElement, options   
-- identifier must be unique between all pagers in html.
-- pagerElement is the div element of pager
-- options is the option object of pager. currently, 2 options are available for pager-memory : useOverscroll, usePointerEvent
-  - useOverscroll is the flag which enables overscroll fling effect
-  - usePointerEvent is the flag which enables pointer(mouse, touch) event. if you want to control pager with only script, disable this option.
+- __identifier__ must be unique between all pagers in html.
+- __pagerElement__ is the div element of pager
+- __options__ is the option object of pager. currently, 2 options are available for pager-memory : useOverscroll, usePointerEvent
+  - __useOverscroll__ is the flag which enables overscroll fling effect
+  - __usePointerEvent__ is the flag which enables pointer(mouse, touch) event. if you want to control pager with only script, disable this option.
 
 you can call these functions on returned pager object :   
-- pager.selectPage(target, animate) : select given page
+- __pager.selectPage(target, animate)__ : select given page
   - target - number : target page index. starts at 0.
   - animate - boolean : enables page transition animation when true. false otherwise.
-- pager.selectNext(animate) : select next page
+- __pager.selectNext(animate)__ : select next page
   - animate - boolean : enables page transition animation when true. false otherwise.
-- pager.selectPrev(animate) : select previous page
+- __pager.selectPrev(animate)__ : select previous page
   - animate - boolean : enables page transition animation when true. false otherwise.
-- pager.getSelectedPageIndex() : get current selected page index. DO NOT use pager.selected because it contains overscroll dummy container as 1 page.
+- __pager.getSelectedPageIndex()__ : get current selected page index. DO NOT use pager.selected because it contains overscroll dummy container as 1 page.
 
 you can set only one pager listener on one pager like below.
 ```
