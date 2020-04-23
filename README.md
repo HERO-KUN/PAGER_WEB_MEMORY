@@ -24,8 +24,8 @@ register pager and store returned object to control pager like below.
   var pager = pagermemory_registerPager('main', document.getElementById('main_pager'), options);
 ```
 
-pagermemory_registerPager have 3 parameters : identifier, pagerElement, options   
-- __identifier__ must be unique between all pagers in html.
+pagermemory_registerPager have 3 parameters :
+- __identifier__ is the identifier which must be unique between all pagers in html.
 - __pagerElement__ is the div element of pager
 - __options__ is the option object of pager. currently, 2 options are available for pager-memory : useOverscroll, usePointerEvent
   - __useOverscroll__ is the flag which enables overscroll fling effect
