@@ -39,6 +39,14 @@ you can call these functions on returned pager object :
 - __pager.selectPrev(animate)__ : select previous page
   - animate - boolean : enables page transition animation when true. false otherwise.
 - __pager.getSelectedPageIndex()__ : get current selected page index. DO NOT use pager.selected because it contains overscroll dummy container as 1 page.
+- __pager.addPage(position, element)__ : inserts a page before given position
+  - position - number : position where insert to
+  - element - element : page element. this must be div element.
+- __pager.removePage(position)__ : removes a given position's page
+  - position - number : position where remove to
+  - NOTE : pager must have at least 1 page. if you try to remove last one page, error will occur.
+
+any other functions are internal call only, so DO NOT call them manually.
 
 you can set only one pager listener on one pager like below.
 ```
