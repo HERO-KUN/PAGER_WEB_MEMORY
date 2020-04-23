@@ -108,7 +108,6 @@ function pagermemory_setup(pager){
         pager.flags.verticalScrolling = Math.abs(x - pager.flags.pointerEventStartPos[0]) < Math.abs(y - pager.flags.pointerEventStartPos[1]);
       }
       pager.flags.scrollFixed = (Math.abs(x - pager.flags.pointerEventStartPos[0]) > 10 || Math.abs(y - pager.flags.pointerEventStartPos[1]) > 10);
-      console.log(pager.flags.scrollFixed);
       var value = pager.selected + (1/pager.size[0]*(pager.flags.pointerEventStartPos[0] - x));
       pagermemory_scrollPage(pager, value);
     }
