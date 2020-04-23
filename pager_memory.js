@@ -2,7 +2,7 @@ var pagermemory_pagers = {};
 var PAGERMEMORY_PAGE_ANIMATE_DURATION = 320;
 var PAGERMEMORY_SCROLL_AMOUNT = 8;
 
-/** @description Regiester a pager element to script. returns pager object.
+/** @description Register a pager element to script. returns pager object.
  *  @params {string} name identifier of pager that must be unique
  *  @params {element} pagerElement target pager element to regiester
  *  @params {object} options options of pager
@@ -60,7 +60,7 @@ function pagermemory_getPager(name){
 }
 
 /** @description Internal call only. Selects page.
- *  @params {object} pager pager object returned by regiesterPager or getPager
+ *  @params {object} pager pager object returned by registerPager or getPager
  *  @params {number} target target page index
  *  @params {boolean} animate enable page translate animation
  */
@@ -73,7 +73,7 @@ function pagermemory_selectPage(pager, target, animate){
 }
 
 /** @description Internal call only. Setup the pager.
- *  @params {object} pager pager object returned by regiesterPager or getPager
+ *  @params {object} pager pager object returned by registerPager or getPager
  */
 function pagermemory_setup(pager){
   pager.object.style.overflow = 'hidden';
@@ -150,7 +150,7 @@ function pagermemory_setup(pager){
 }
 
 /** @description Internal call only. Sets pager page without any animations.
- *  @params {object} pager pager object returned by regiesterPager or getPager
+ *  @params {object} pager pager object returned by registerPager or getPager
  *  @params {number} pageIndex target page index
  */
 function pagermemory_setPage(pager, pageIndex){
@@ -159,7 +159,7 @@ function pagermemory_setPage(pager, pageIndex){
 }
 
 /** @description Internal call only. Sets pager page with animation.
- *  @params {object} pager pager object returned by regiesterPager or getPager
+ *  @params {object} pager pager object returned by registerPager or getPager
  *  @params {number} pageIndex target page index
  */
 function pagermemory_animatePage(pager, pageIndex){
@@ -177,7 +177,7 @@ function pagermemory_animatePage(pager, pageIndex){
 }
 
 /** @description Internal call only. Scrolls pager to target value. target value can be 0 ~ pager.pageCount - 1. float values available.
- *  @params {object} pager pager object returned by regiesterPager or getPager
+ *  @params {object} pager pager object returned by registerPager or getPager
  *  @params {number} value target scroll value
  */
 function pagermemory_scrollPage(pager, value){
