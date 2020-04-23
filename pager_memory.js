@@ -41,6 +41,9 @@ function pagermemory_registerPager(name, pagerElement, options){
     },
     addPage: function(position, element){
       pagermemory_addPage(this, position, element);
+    },
+    removePage: function(position){
+      pagermemory_removePage(this, position);
     }
   }
   pagermemory_setup(pager);
@@ -138,12 +141,13 @@ function pagermemory_setup(pager){
 
 /** @description Internal call only. Adds page before given position.
  *  @params {object} pager pager object returned by registerPager or getPager
- *  @params {number} position
+ *  @params {number} position position where insert to
  *  @params {element} element page object which must be div element
  */
 function pagermemory_addPage(pager, position, element){
   if(position < 0) return;
   if(pager.options.useOverscroll) position++;
+
   if(position > pager.pageCount-(pager.options.useOverscroll ? 2 : 1)) {
     if(!pager.options.useOverscroll){
       pager.object.appendChild(element);
@@ -159,6 +163,28 @@ function pagermemory_addPage(pager, position, element){
     pagermemory_setPage(pager, pager.selected);
   else
     pagermemory_setPage(pager, pager.selected + 1);
+}
+
+/** @description Internal call only. Removes given position's page.
+ *  @params {object} pager pager object returned by registerPager or getPager
+ *  @params {number} position position where remove to
+ */
+function pagermemory_removePage(pager, position){
+  if(pager.pageCount == (pager.options.useOverscroll ? 3 : 1)) {
+    console.error("ERROR : pager must have at least 1 page. you are trying to remove last one page.");
+    return;
+  }
+  if(position < 0) return;
+  if(pager.options.useOverscroll) position++;
+  if(position > pager.pageCount-(pager.options.useOverscroll ? 2 : 1)) return;
+
+  pager.items[position].remove();
+  pagermemory_notifyPageUpdated(pager);
+
+  if(position - (pager.options.useOverscroll ? 1 : 0) >= pager.getSelectedPageIndex())
+    pagermemory_setPage(pager, pager.selected);
+  else
+    pagermemory_setPage(pager, pager.selected - 1);
 }
 
 /** @description Internal call only. Re-positions pages and update items and pageCount.
