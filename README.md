@@ -57,12 +57,25 @@ you can call these functions on returned pager object :
   - position - number : position where remove to
   - NOTE : pager must have at least 1 page. if you try to remove last one page, error will occur.
 
-any other functions are internal call only, so DO NOT call them manually.
+any other functions are internal call only, so DO NOT call them manually.      
+
+you can access these properties to get pager data :
+- __pager.pageCount__ - readonly number : returns page count of pager.
+- __pager.lockPager__ - boolean : true if you want to lock all pager event and changing pages, false otherwise.
 
 you can set only one pager listener on one pager like below.
+- __index__ - number(int) : selected page position
 ```
-  pager.listener = function(index){
+  pager.pagerListener = function(index){
     console.log('current selected item : ' + index);
+  }
+```
+
+you can set only one scroll listener on one pager like below.
+- __value__ - number(float) : current scroll value. from 0 to pager.pageCount
+```
+  pager.scrollListener = function(value){
+    console.log('current scroll value : ' + value);
   }
 ```
 
