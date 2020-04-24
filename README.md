@@ -1,6 +1,16 @@
 # PAGER_WEB_MEMORY
 web version of pager - type memory  
-contributor : HERO-KUN
+contributor : HERO-KUN   
+## Intro
+Pager is the view which handles paging layouts.   
+Inspired by android.support.v4.view.ViewPager, but it is more simillar with Google Play Store mobile application's pager.   
+You can add or remove pages dynamically but we recommand to use static layouts to paging.   
+You can simply swipe on mobile devices or create tab in desktop platform to change current pages.   
+
+## Changelog
+- 2020.04.24 - added lockPager property and scrollListener
+- 2020.04.23 - added runtime page add/remove code.
+- 2020.04.22 - first version.
 
 ## Usage
 ### html
@@ -64,6 +74,6 @@ you can get pager object by name like below.
 placing and registering multiple pager in one html is ok.   
 notice that user-select:none css style will neccessary if you support pointer events in desktop platform.
 
-## Support browsers
+## Supported browsers
 currently, pager-web-memory only support chrome browser fully.   
 other browsers are not tested.
