@@ -17,10 +17,11 @@ function pagermemory_registerPager(name, pagerElement, options){
     selected: 0,
     options: options,
     size: pagermemory_getSize(pagerElement),
-    pageListener: function(page) {},
-    scrollListener: function(value) {},
+    pageListener: [],
+    scrollListener: [],
     lockPager: false,
     flags: {
+      beforeSelected: 0,
       animating: false,
       pointerDown: false,
       value: 0,
@@ -46,6 +47,24 @@ function pagermemory_registerPager(name, pagerElement, options){
     },
     removePage: function(position){
       pagermemory_removePage(this, position);
+    },
+    addPageListener: function(listener){
+      this.pageListener.push(listener);
+    },
+    removePageListener: function(listener){
+      this.pageListener.splice(this.pageListener.indexOf(listener), 1);
+    },
+    removeAllPageListener: function(){
+      this.pageListener = [];
+    },
+    addScrollListener: function(listener){
+      this.scrollListener.push(listener);
+    },
+    removeScrollListener: function(listener){
+      this.scrollListener.splice(this.scrollListener.indexOf(listener), 1);
+    },
+    removeAllScrollListener: function(){
+      this.scrollListener = [];
     }
   }
   pagermemory_setup(pager);
@@ -223,7 +242,12 @@ function pagermemory_setPage(pager, pageIndex){
   if(pager.lockPager) return;
   pagermemory_scrollPage(pager, pageIndex);
   pager.selected = pageIndex;
-  pager.pageListener(pager.getSelectedPageIndex());
+  if(pager.selected != pager.flags.beforeSelected){
+    for(var i = 0; i < pager.pageListener.length; i++){
+      pager.pageListener[i](pager.getSelectedPageIndex());
+    }
+    pager.flags.beforeSelected = pager.selected;
+  }
 }
 
 /** @description Internal call only. Sets pager page with animation.
@@ -243,7 +267,12 @@ function pagermemory_animatePage(pager, pageIndex){
     }
   );
   pager.selected = pageIndex;
-  pager.pageListener(pager.getSelectedPageIndex());
+  if(pager.selected != pager.flags.beforeSelected){
+    for(var i = 0; i < pager.pageListener.length; i++){
+      pager.pageListener[i](pager.getSelectedPageIndex());
+    }
+    pager.flags.beforeSelected = pager.selected;
+  }
 }
 
 /** @description Internal call only. Scrolls pager to target value. target value can be 0 ~ pager.pageCount - 1. float values available.
@@ -274,7 +303,9 @@ function pagermemory_scrollPage(pager, value){
     }
     pager.items[pageIndex].style.pointerEvents = (pager.items[pageIndex].style.opacity < 0.5) ? 'none' : 'all';
   }
-  pager.scrollListener(pager.options.useOverscroll ? value-1 : value);
+  for(var i = 0; i < pager.scrollListener.length; i++){
+    pager.scrollListener[i](pager.options.useOverscroll ? value-1 : value);
+  }
   pager.flags.value = value;
 }
 
