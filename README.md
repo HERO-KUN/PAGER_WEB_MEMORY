@@ -59,9 +59,9 @@ you can call these functions on returned pager object :
 
 any other functions are internal call only, so DO NOT call them manually.      
 
-you can access these properties to get pager data :
+you can access these properties to get/set pager data :
 - __pager.pageCount__ - readonly number : returns page count of pager.
-- __pager.lockPager__ - boolean : true if you want to lock all pager event and changing pages, false otherwise.
+- __pager.lockPager__ - boolean : true if you want to lock all pager event and changing pages, false otherwise.   
 
 you can set only one pager listener on one pager like below.
 - __index__ - number(int) : selected page position
@@ -69,7 +69,7 @@ you can set only one pager listener on one pager like below.
   pager.pagerListener = function(index){
     console.log('current selected item : ' + index);
   }
-```
+```   
 
 you can set only one scroll listener on one pager like below.
 - __value__ - number(float) : current scroll value. from 0 to pager.pageCount
@@ -77,7 +77,7 @@ you can set only one scroll listener on one pager like below.
   pager.scrollListener = function(value){
     console.log('current scroll value : ' + value);
   }
-```
+```   
 
 you can get pager object by name like below.
 ```
