@@ -17,7 +17,9 @@ function pagermemory_registerPager(name, pagerElement, options){
     selected: 0,
     options: options,
     size: pagermemory_getSize(pagerElement),
-    listener: function(page) {},
+    pageListener: function(page) {},
+    scrollListener: function(value) {},
+    lockPager: false,
     flags: {
       animating: false,
       pointerDown: false,
@@ -72,6 +74,7 @@ function pagermemory_getPager(name){
  *  @params {boolean} animate enable page translate animation
  */
 function pagermemory_selectPage(pager, target, animate){
+  if(pager.lockPager) return;
   if(target < 0) return;
   if(pager.options.useOverscroll) target++;
   if(target > pager.pageCount-(pager.options.useOverscroll ? 2 : 1)) return;
@@ -217,9 +220,10 @@ function pagermemory_notifyPageUpdated(pager){
  *  @params {number} pageIndex target page index
  */
 function pagermemory_setPage(pager, pageIndex){
+  if(pager.lockPager) return;
   pagermemory_scrollPage(pager, pageIndex);
   pager.selected = pageIndex;
-  pager.listener(pager.getSelectedPageIndex());
+  pager.pageListener(pager.getSelectedPageIndex());
 }
 
 /** @description Internal call only. Sets pager page with animation.
@@ -227,6 +231,7 @@ function pagermemory_setPage(pager, pageIndex){
  *  @params {number} pageIndex target page index
  */
 function pagermemory_animatePage(pager, pageIndex){
+  if(pager.lockPager) return;
   if(pager.flags.animating) return;
   pager.flags.animating = true;
   pagermemory_animate(pager.flags.value, pageIndex, PAGERMEMORY_PAGE_ANIMATE_DURATION,
@@ -238,7 +243,7 @@ function pagermemory_animatePage(pager, pageIndex){
     }
   );
   pager.selected = pageIndex;
-  pager.listener(pager.getSelectedPageIndex());
+  pager.pageListener(pager.getSelectedPageIndex());
 }
 
 /** @description Internal call only. Scrolls pager to target value. target value can be 0 ~ pager.pageCount - 1. float values available.
@@ -246,6 +251,7 @@ function pagermemory_animatePage(pager, pageIndex){
  *  @params {number} value target scroll value
  */
 function pagermemory_scrollPage(pager, value){
+  if(pager.lockPager) return;
   if(value > pager.itemCount - 1 || value < 0) return;
   if(pager.flags.verticalScrolling) return;
   var scrollAmountPerPage = pager.size[0]/PAGERMEMORY_SCROLL_AMOUNT;
@@ -268,6 +274,7 @@ function pagermemory_scrollPage(pager, value){
     }
     pager.items[pageIndex].style.pointerEvents = (pager.items[pageIndex].style.opacity < 0.5) ? 'none' : 'all';
   }
+  pager.scrollListener(pager.options.useOverscroll ? value-1 : value);
   pager.flags.value = value;
 }
 
