@@ -22,22 +22,22 @@ You can simply swipe on mobile devices or create tab on desktop platform to chan
 ### html
 create pager object and its childs(pages) something like this.
 
-```  
-  <div id="main_pager" style="width: 100%; height: 50%;">   
-    <div>Page0 - Some Content here</div>   
-    <div>Page1 - Some Content here</div>   
-    <div>Page2 - Some Content here</div>   
-    <div>Page3 - Some Content here</div>   
-  </div>   
+```html
+<div id="main_pager" style="width: 100%; height: 50%;">   
+  <div>Page0 - Some Content here</div>   
+  <div>Page1 - Some Content here</div>   
+  <div>Page2 - Some Content here</div>   
+  <div>Page3 - Some Content here</div>   
+</div>   
 ```
 
 notice that pager object must have its own width and height like % or px etc.   
 pager items(pages) can have its child elements like div, span, etc. so fill the child div of pager as you want.   
 ### javascript
 register pager and store returned object to control pager like below.   
-```
-  var options = {useOverscroll: true, usePointerEvent: true};   
-  var pager = pagermemory_registerPager('main', document.getElementById('main_pager'), options);
+```javascript
+var options = {useOverscroll: true, usePointerEvent: true};   
+var pager = pagermemory_registerPager('main', document.getElementById('main_pager'), options);
 ```
 
 pagermemory_registerPager have 3 parameters :
@@ -81,8 +81,8 @@ you can access these properties to get/set pager data :
 - __pager.lockPager__ - boolean : true if you want to lock all pager event and changing pages, false otherwise.   
 
 you can get pager object by name like below.
-```
-  var mainPager = pagermemory_getPager('main');
+```javascript
+var mainPager = pagermemory_getPager('main');
 ```
 
 placing and registering multiple pager in one html is ok.   
