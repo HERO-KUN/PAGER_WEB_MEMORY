@@ -5,12 +5,18 @@ contributor : HERO-KUN
 Pager is the view which handles paging layouts.   
 Inspired by android.support.v4.view.ViewPager, but it is more simillar with Google Play Store mobile application's pager.   
 You can add or remove pages dynamically but we recommand to use static layouts to paging.   
-You can simply swipe on mobile devices or create tab in desktop platform to change current pages.   
+You can simply swipe on mobile devices or create tab on desktop platform to change current pages.   
 
 ## Changelog
-- 2020.04.24 - added lockPager property and scrollListener
-- 2020.04.23 - added runtime page add/remove code.
-- 2020.04.22 - first version.
+- 2020.04.25
+  - you can now use multiple listener on one pager
+  - pageListener behaviour changed, now triggers only when page index changed.
+- 2020.04.24
+  - added lockPager property and scrollListener
+- 2020.04.23
+  - added runtime page add/remove code.
+- 2020.04.22
+  - first version.
 
 ## Usage
 ### html
@@ -56,28 +62,23 @@ you can call these functions on returned pager object :
 - __pager.removePage(position)__ : removes a given position's page
   - position - number : position where remove to
   - NOTE : pager must have at least 1 page. if you try to remove last one page, error will occur.
+- __pager.addPageListener(listener)__ : adds a page change listener to pager.
+  - listener - function : function to execute when page changed.
+- __pager.removePageListener(listener)__ : removes a page change listener from pager.
+  - listener - function : function to remove from pager.
+- __pager.removeAllPageListener()__ : removes all page listeners from pager.
+- __pager.addScrollListener(listener)__ : adds a scroll change listener to pager.
+  - listener - function : function to execute when pager scroll changed.
+  - NOTE - you can use this function to create page indicator!
+- __pager.removeScrollListener(listener)__ : removes a scroll change listener from pager.
+  - listener - function : function to remove from pager.
+- __pager.removeAllScrollListener()__ : removes all scroll listeners from pager.
 
 any other functions are internal call only, so DO NOT call them manually.      
 
 you can access these properties to get/set pager data :
 - __pager.pageCount__ - readonly number : returns page count of pager.
 - __pager.lockPager__ - boolean : true if you want to lock all pager event and changing pages, false otherwise.   
-
-you can set only one pager listener on one pager like below.
-- __index__ - number(int) : selected page position
-```
-  pager.pagerListener = function(index){
-    console.log('current selected item : ' + index);
-  }
-```   
-
-you can set only one scroll listener on one pager like below.
-- __value__ - number(float) : current scroll value. from 0 to pager.pageCount
-```
-  pager.scrollListener = function(value){
-    console.log('current scroll value : ' + value);
-  }
-```   
 
 you can get pager object by name like below.
 ```
@@ -86,6 +87,7 @@ you can get pager object by name like below.
 
 placing and registering multiple pager in one html is ok.   
 notice that user-select:none css style will neccessary if you support pointer events in desktop platform.
+placing another pager in pager item is ok, but you must disable all pager pointer events except one pager. If you not, multiple pager are effected when one pointer event occur.
 
 ## Supported browsers
 currently, pager-web-memory only support chrome browser fully.   
