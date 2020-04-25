@@ -299,7 +299,7 @@ function pagermemory_resetPagerItemPointerEvents(pager){
  */
 function DefaultPageTransitionMethod(pager){
   var PAGERMEMORY_SCROLL_AMOUNT = 8;
-  
+
   this.position = function(pageIndex){
     return (pageIndex * (100 / PAGERMEMORY_SCROLL_AMOUNT)) + '%';
   };
@@ -324,7 +324,7 @@ function DefaultPageTransitionMethod(pager){
       return Math.max(-2 * Math.abs(value - pageIndex) + 1, 0);
     }
   };
-  this.scalePage = function(value){
+  this.scalePage = function(value, pageIndex){
     return '100%';
   }
 }
