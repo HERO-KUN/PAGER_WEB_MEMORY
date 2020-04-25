@@ -82,6 +82,8 @@ any other functions are internal call only, so DO NOT call them manually.
 
 #### Properties
 you can access these properties to get/set pager data :
+- __pager.size__ - readonly number array : first item is width, second item is height. with pixels.
+- __pager.options__ - readonly object : contains options which set when registerPager.
 - __pager.pageCount__ - readonly number : returns page count of pager.
 - __pager.lockPager__ - boolean : true if you want to lock all pager event and changing pages, false otherwise.   
 
