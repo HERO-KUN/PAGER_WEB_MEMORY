@@ -10,13 +10,13 @@ You can simply swipe on mobile devices or create tab on desktop platform to chan
 ## Changelog
 - 2020.04.25
   - you can now use multiple listener on one pager
-  - pageListener behaviour changed, now triggers only when page index changed.
+  - pageListener behaviour changed, now triggers only when page index changed
 - 2020.04.24
   - added lockPager property and scrollListener
 - 2020.04.23
-  - added runtime page add/remove code.
+  - added runtime page add/remove code
 - 2020.04.22
-  - first version.
+  - first version
 
 ## Usage
 ### html
@@ -86,8 +86,8 @@ you can get pager object by name like below.
 ```
 
 placing and registering multiple pager in one html is ok.   
-notice that user-select:none css style will neccessary if you support pointer events in desktop platform.
-placing another pager in pager item is ok, but you must disable all pager pointer events except one pager. If you not, multiple pager are effected when one pointer event occur.
+notice that user-select:none css style will neccessary if you support pointer events in desktop platform.   
+placing another pager in pager item is ok, but you must disable all pager pointer events except one pager. If not, multiple pager are effected when one pointer event occur.
 
 ## Supported browsers
 currently, pager-web-memory only support chrome browser fully.   
