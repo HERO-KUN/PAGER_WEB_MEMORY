@@ -1,6 +1,4 @@
-# PAGER_WEB_MEMORY
-web version of pager - type memory  
-contributor : HERO-KUN   
+# PAGER - web_memory
 ## Intro
 Pager is the view which handles paging layouts.   
 Inspired by android.support.v4.view.ViewPager, but it is more simillar with Google Play Store mobile application's pager.   
@@ -133,7 +131,8 @@ the custom transition method must contains these properties :
 currently, predefined transition methods list is below :
 - __DefaultPageTransitionMethod__
 - __ZoomOutPageTransitionMethod__
-- __DepthPageTransitionMethod__
+- __DepthPageTransitionMethod__   
+
 you can change transition method by using pager.setPageTransitionMethod like below
 ```javascript
 mainPager.setPageTransitionMethod(new ZoomOutPageTransitionMethod(mainPager));
@@ -146,9 +145,9 @@ var mainPager = pagermemory_getPager('main');
 ```
 
 ### Cautions
-you can place and register multiple pager in one html.   
-notice that user-select:none css style will neccessary if you support pointer events in desktop platform.   
-placing another pager in pager item is ok, but you must disable all pager's pointer events except one pager. If not, multiple pager are effected when one pointer event occur.
+- you can place and register multiple pager in one html.   
+- notice that user-select:none css style will neccessary if you support pointer events in desktop platform.   
+- placing another pager in pager item is ok, but you must disable all pager's pointer events except one pager. If not, multiple pager are effected when one pointer event occur.
 
 ## Supported browsers
 currently, pager-web-memory only support chrome browser fully.   
