@@ -1,6 +1,4 @@
-# PAGER_WEB_MEMORY
-web version of pager - type memory  
-contributor : HERO-KUN   
+# PAGER - ver. web_memory 
 ## Intro
 Pager is the view which handles paging layouts.   
 Inspired by android.support.v4.view.ViewPager, but it is more simillar with Google Play Store mobile application's pager.   
