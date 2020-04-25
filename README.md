@@ -1,4 +1,4 @@
-# PAGER - ver. web_memory 
+# PAGER - web_memory
 ## Intro
 Pager is the view which handles paging layouts.   
 Inspired by android.support.v4.view.ViewPager, but it is more simillar with Google Play Store mobile application's pager.   
@@ -6,7 +6,9 @@ You can add or remove pages dynamically but we recommand to use static layouts t
 You can simply swipe on mobile devices or create tab on desktop platform to change current pages.   
 
 ## Changelog
-- 2020.04.25
+- 2020.04.25 - PM
+  - new feature : PageTransitionMethod! you can now customize page transition animation as you want!
+- 2020.04.25 - AM
   - you can now use multiple listener on one pager
   - pageListener behaviour changed, now triggers only when page index changed
 - 2020.04.24
@@ -32,6 +34,7 @@ create pager object and its childs(pages) something like this.
 notice that pager object must have its own width and height like % or px etc.   
 pager items(pages) can have its child elements like div, span, etc. so fill the child div of pager as you want.   
 ### javascript
+#### Register Pager
 register pager and store returned object to control pager like below.   
 ```javascript
 var options = {useOverscroll: true, usePointerEvent: true};   
@@ -45,6 +48,7 @@ pagermemory_registerPager have 3 parameters :
   - __useOverscroll__ is the flag which enables overscroll fling effect
   - __usePointerEvent__ is the flag which enables pointer(mouse, touch) event. if you want to control pager with only script, disable this option.
 
+#### Functions
 you can call these functions on returned pager object :   
 - __pager.selectPage(target, animate)__ : select given page
   - target - number : target page index. starts at 0.
@@ -71,21 +75,81 @@ you can call these functions on returned pager object :
 - __pager.removeScrollListener(listener)__ : removes a scroll change listener from pager.
   - listener - function : function to remove from pager.
 - __pager.removeAllScrollListener()__ : removes all scroll listeners from pager.
+- __pager.setPageTransitionMethod(method)__ : set custom transition method to pager.
+  - method - object : object that contains custom transition methods. see below section for more information.
 
 any other functions are internal call only, so DO NOT call them manually.      
 
+#### Properties
 you can access these properties to get/set pager data :
+- __pager.size__ - readonly number array : first item is width, second item is height. with pixels.
+- __pager.options__ - readonly object : contains options which set when registerPager.
 - __pager.pageCount__ - readonly number : returns page count of pager.
 - __pager.lockPager__ - boolean : true if you want to lock all pager event and changing pages, false otherwise.   
 
+#### Customizing Transition Methods
+you can create a new transition method object with constructor.
+below code shows the default transition method object.
+```javascript
+function DefaultPageTransitionMethod(pager){
+  var PAGERMEMORY_SCROLL_AMOUNT = 8;
+
+  this.position = function(pageIndex){
+    return (pageIndex * (100 / PAGERMEMORY_SCROLL_AMOUNT)) + '%';
+  };
+  this.scrollPage = function(value) {
+    var scrollAmountPerPage = pager.size[0]/PAGERMEMORY_SCROLL_AMOUNT;
+    var floatArea = value - parseInt(value);
+    if(pager.options.useOverscroll && value < 1){
+      return scrollAmountPerPage * (Math.floor(value) + (3 / 4 + floatArea / 4));
+    }else if(pager.options.useOverscroll && value > pager.pageCount - 2){
+      return scrollAmountPerPage * (Math.floor(value) + 1 / 4 * floatArea);
+    }else{
+      return scrollAmountPerPage * (Math.floor(value) +
+        ((floatArea >= 0.5) ? ((-128) * Math.pow(floatArea - 1, 8) + 1) : 128 * Math.pow(floatArea, 8)));
+    }
+  };
+  this.translatePage = function(value, pageIndex) {
+    return '0%';
+  }
+  this.opacityPage = function(value, pageIndex) {
+    if(value >= ((pager.options.useOverscroll) ? 1 : 0) &&
+       value <= ((pager.options.useOverscroll) ? pager.pageCount - 2 : pager.pageCount - 1)){
+      return Math.max(-2 * Math.abs(value - pageIndex) + 1, 0);
+    }
+  };
+  this.scalePage = function(value){
+    return '100%';
+  }
+}
+```
+the custom transition method must contains these properties :
+- __position__ (pageIndex) : function which returns initial position of each pages. must return a value with unit.
+- __scrollPage__ (value) : function which returns scrollLeft value of pager. returned value from this function will sets pager.scrollLeft property. must return a value without unit.
+- __translatePage__ (value, pageIndex) : function which returns translateX value of each pages. must return a value with unit.
+- __scalePage__ (value, pageIndex) : function which returns scale value of each pages. 1 equals with normal scale.
+- __opacityPage__ (value, pageIndex) : function which returns opacity value of each pages. [0, 1] value.
+
+currently, predefined transition methods list is below :
+- __DefaultPageTransitionMethod__
+- __ZoomOutPageTransitionMethod__
+- __DepthPageTransitionMethod__   
+
+you can change transition method by using pager.setPageTransitionMethod like below
+```javascript
+mainPager.setPageTransitionMethod(new ZoomOutPageTransitionMethod(mainPager));
+```
+
+#### Other methods
 you can get pager object by name like below.
 ```javascript
 var mainPager = pagermemory_getPager('main');
 ```
 
-placing and registering multiple pager in one html is ok.   
-notice that user-select:none css style will neccessary if you support pointer events in desktop platform.   
-placing another pager in pager item is ok, but you must disable all pager pointer events except one pager. If not, multiple pager are effected when one pointer event occur.
+### Cautions
+- you can place and register multiple pager in one html.   
+- notice that user-select:none css style will neccessary if you support pointer events in desktop platform.   
+- placing another pager in pager item is ok, but you must disable all pager's pointer events except one pager. If not, multiple pager are effected when one pointer event occur.
 
 ## Supported browsers
 currently, pager-web-memory only support chrome browser fully.   
