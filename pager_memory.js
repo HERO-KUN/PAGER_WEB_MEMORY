@@ -1,6 +1,5 @@
 var pagermemory_pagers = {};
 var PAGERMEMORY_PAGE_ANIMATE_DURATION = 320;
-var PAGERMEMORY_SCROLL_AMOUNT = 8;
 
 /** @description Register a pager element to script. returns pager object.
  *  @params {string} name identifier of pager that must be unique
@@ -214,11 +213,13 @@ function pagermemory_notifyPageUpdated(pager){
     each.style.padding = '0';
     each.style.margin = '0';
     each.style.top = (childIndex * -100) + '%';
-    each.style.left = (childIndex * (100 / PAGERMEMORY_SCROLL_AMOUNT)) + '%';
     pager.items.push(each);
     childIndex++;
   }
   pager.pageCount = childIndex;
+  for(var i = 0; i < pager.items.length; i++){
+    pager.items[i].style.zIndex = pager.items.length - i;
+  }
 }
 
 /** @description Internal call only. Re-positions pages according to current page transition method.
@@ -272,9 +273,11 @@ function pagermemory_scrollPage(pager, value){
   if(pager.lockPager) return;
   if(value > pager.itemCount - 1 || value < 0) return;
   if(pager.flags.verticalScrolling) return;
-  pager.object.scrollLeft = pager.pageTransitionMethod.translatePage(value);
+  pager.object.scrollLeft = pager.pageTransitionMethod.scrollPage(value);
   for(var pageIndex = 0; pageIndex < pager.pageCount; pageIndex++){
-    pager.items[pageIndex].style.transform = 'scale(' + pager.pageTransitionMethod.scalePage(value) + ')';
+    pager.items[pageIndex].style.transform =
+      'translateX(' + pager.pageTransitionMethod.translatePage(value, pageIndex) + ') ' +
+      'scale(' + pager.pageTransitionMethod.scalePage(value, pageIndex) + ')';
     pager.items[pageIndex].style.opacity = pager.pageTransitionMethod.opacityPage(value, pageIndex);
   }
   pager.scrollListener(pager.options.useOverscroll ? value-1 : value);
@@ -286,7 +289,7 @@ function pagermemory_scrollPage(pager, value){
  */
 function pagermemory_resetPagerItemPointerEvents(pager){
   for(var i = 0; i < pager.items.length; i++){
-    if(i == pager.getSelectedPageIndex()) pager.items[i].style.pointerEvents = 'all';
+    if(i == pager.selected) pager.items[i].style.pointerEvents = 'all';
     else pager.items[i].style.pointerEvents = 'none';
   }
 }
@@ -295,10 +298,12 @@ function pagermemory_resetPagerItemPointerEvents(pager){
  *  @params {object} pager pager data object to perform transition. does not have to equal with attatched pager.
  */
 function DefaultPageTransitionMethod(pager){
+  var PAGERMEMORY_SCROLL_AMOUNT = 8;
+  
   this.position = function(pageIndex){
     return (pageIndex * (100 / PAGERMEMORY_SCROLL_AMOUNT)) + '%';
   };
-  this.translatePage = function(value) {
+  this.scrollPage = function(value) {
     var scrollAmountPerPage = pager.size[0]/PAGERMEMORY_SCROLL_AMOUNT;
     var floatArea = value - parseInt(value);
     if(pager.options.useOverscroll && value < 1){
@@ -310,6 +315,9 @@ function DefaultPageTransitionMethod(pager){
         ((floatArea >= 0.5) ? ((-128) * Math.pow(floatArea - 1, 8) + 1) : 128 * Math.pow(floatArea, 8)));
     }
   };
+  this.translatePage = function(value, pageIndex) {
+    return '0%';
+  }
   this.opacityPage = function(value, pageIndex) {
     if(value >= ((pager.options.useOverscroll) ? 1 : 0) &&
        value <= ((pager.options.useOverscroll) ? pager.pageCount - 2 : pager.pageCount - 1)){
@@ -321,14 +329,14 @@ function DefaultPageTransitionMethod(pager){
   }
 }
 
-/** @description The linear page transition method object constructor. Quallity low.
+/** @description The zoom out page transition method object constructor. Quallity low.
  *  @params {object} pager pager data object to perform transition. does not have to equal with attatched pager.
  */
 function ZoomOutPageTransitionMethod(pager){
   this.position = function(pageIndex) {
     return (pageIndex * 100) + '%';
   };
-  this.translatePage = function(value){
+  this.scrollPage = function(value){
     var floatArea = value - parseInt(value);
     if(pager.options.useOverscroll && value < 1){
       return pager.size[0] * (Math.floor(value) + (3 / 4 + floatArea / 4));
@@ -339,6 +347,19 @@ function ZoomOutPageTransitionMethod(pager){
         ((floatArea >= 0.5) ? ((-8) * Math.pow(floatArea - 1, 4) + 1) : 8 * Math.pow(floatArea, 4)));
     }
   };
+  this.translatePage = function(value, pageIndex) {
+    return '0%';
+  }
+  this.scalePage = function(value, pageIndex){
+    var floatArea = value - Math.floor(value);
+    if(floatArea < 0.2){
+      return 1 - floatArea/4;
+    }else if(floatArea < 0.8){
+      return 0.95;
+    }else{
+      return 0.95 + (floatArea - 0.8)/4;
+    }
+  }
   this.opacityPage = function(value, pageIndex){
     var floatArea = value - Math.floor(value);
     if(floatArea < 0.3){
@@ -349,16 +370,52 @@ function ZoomOutPageTransitionMethod(pager){
       return 0.55 + (floatArea - 0.7) * 1.5;
     }
   };
-  this.scalePage = function(value){
-    var floatArea = value - Math.floor(value);
-    if(floatArea < 0.2){
-      return 1 - floatArea/4;
-    }else if(floatArea < 0.8){
-      return 0.95;
-    }else{
-      return 0.95 + (floatArea - 0.8)/4;
+}
+
+/** @description The depth page transition method object constructor. Quallity low.
+ *  @params {object} pager pager data object to perform transition. does not have to equal with attatched pager.
+ */
+function DepthPageTransitionMethod(pager){
+  this.position = function(pageIndex) {
+    return '0%';
+  };
+  this.scrollPage = function(value) {
+    return 0;
+  };
+  this.translatePage = function(value, pageIndex) {
+    var integer = Math.floor(value);
+    var float = value - integer;
+
+    if(pageIndex < integer){
+      return '-100%';
+    }else if(pageIndex == integer){
+      return -1 * ((float >= 0.5) ? ((-8) * Math.pow(float - 1, 4) + 1) : 8 * Math.pow(float, 4)) * 100 + '%';
+    } else {
+      return '0px';
     }
-  }
+  };
+  this.scalePage = function(value, pageIndex) {
+    var integer = Math.floor(value);
+    var float = value - integer;
+
+    if(pageIndex != integer){
+      return 0.75 + float/4;
+    } else {
+      return 1;
+    }
+  };
+  this.opacityPage = function(value, pageIndex) {
+    var integer = Math.floor(value);
+    var float = value - integer;
+
+    if(pageIndex == integer + 1){
+      return float;
+    } else if(pageIndex > integer + 1) {
+      return 0;
+    } else {
+      return 1;
+    }
+  };
 }
 
 /** @description Internal call only. Animates value linearly.
