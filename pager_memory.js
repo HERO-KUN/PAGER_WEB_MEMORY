@@ -68,17 +68,15 @@ function pagermemory_registerPager(name, pagerElement, options){
     },
     setPageTransitionMethod: function(method){
       this.pageTransitionMethod = method;
+      this.pageTransitionMethod.pager = this;
       pagermemory_notifyPageTransitionMethodUpdated(this);
     }
   }
   pagermemory_setup(pager);
-  var resize = function(){
-    pager.size = pagermemory_getSize(pager.object);
-    pager.selectPage(pager.getSelectedPageIndex(), false);
-  }
-  window.addEventListener('resize', resize);
-  window.addEventListener('load', resize);
-  pager.setPageTransitionMethod(new DefaultPageTransitionMethod(pager));
+  pagermemory_notifyPagerResized(pager);
+  window.addEventListener('resize', function(){pagermemory_notifyPagerResized(pager);});
+  window.addEventListener('load', function(){pagermemory_notifyPagerResized(pager);});
+  pager.setPageTransitionMethod(new DefaultPageTransitionMethod());
   pager.selectPage(0);
   pagermemory_pagers[name] = pager;
   return pagermemory_pagers[name];
@@ -251,6 +249,14 @@ function pagermemory_notifyPageTransitionMethodUpdated(pager){
   pager.selectPage(pager.getSelectedPageIndex());
 }
 
+/** @description Reset the pager.size property and select the selected item again.
+ *  @params {object} pager pager object to notify
+ */
+function pagermemory_notifyPagerResized(pager){
+  pager.size = pagermemory_getSize(pager.object);
+  pager.selectPage(pager.getSelectedPageIndex(), false);
+}
+
 /** @description Internal call only. Sets pager page without any animations.
  *  @params {object} pager pager object returned by registerPager or getPager
  *  @params {number} pageIndex target page index
@@ -326,20 +332,20 @@ function pagermemory_resetPagerItemPointerEvents(pager){
 }
 
 /** @description The default page transition method object constructor. You can change this using pager.setPageTransitionMethod()
- *  @params {object} pager pager data object to perform transition. does not have to equal with attatched pager.
+ *  @params {object} pager pager data object to perform transition.
  */
-function DefaultPageTransitionMethod(pager){
+function DefaultPageTransitionMethod(){
   var PAGERMEMORY_SCROLL_AMOUNT = 8;
 
   this.position = function(pageIndex){
     return (pageIndex * (100 / PAGERMEMORY_SCROLL_AMOUNT)) + '%';
   };
   this.scrollPage = function(value) {
-    var scrollAmountPerPage = pager.size[0]/PAGERMEMORY_SCROLL_AMOUNT;
+    var scrollAmountPerPage = this.pager.size[0]/PAGERMEMORY_SCROLL_AMOUNT;
     var floatArea = value - parseInt(value);
-    if(pager.options.useOverscroll && value < 1){
+    if(this.pager.options.useOverscroll && value < 1){
       return scrollAmountPerPage * (Math.floor(value) + (3 / 4 + floatArea / 4));
-    }else if(pager.options.useOverscroll && value > pager.pageCount - 2){
+    }else if(this.pager.options.useOverscroll && value > this.pager.pageCount - 2){
       return scrollAmountPerPage * (Math.floor(value) + 1 / 4 * floatArea);
     }else{
       return scrollAmountPerPage * (Math.floor(value) +
@@ -350,8 +356,8 @@ function DefaultPageTransitionMethod(pager){
     return '0%';
   }
   this.opacityPage = function(value, pageIndex) {
-    if(value >= ((pager.options.useOverscroll) ? 1 : 0) &&
-       value <= ((pager.options.useOverscroll) ? pager.pageCount - 2 : pager.pageCount - 1)){
+    if(value >= ((this.pager.options.useOverscroll) ? 1 : 0) &&
+       value <= ((this.pager.options.useOverscroll) ? this.pager.pageCount - 2 : this.pager.pageCount - 1)){
       return Math.max(-2 * Math.abs(value - pageIndex) + 1, 0);
     }
   };
@@ -361,20 +367,20 @@ function DefaultPageTransitionMethod(pager){
 }
 
 /** @description The zoom out page transition method object constructor. Quallity low.
- *  @params {object} pager pager data object to perform transition. does not have to equal with attatched pager.
+ *  @params {object} pager pager data object to perform transition.
  */
-function ZoomOutPageTransitionMethod(pager){
+function ZoomOutPageTransitionMethod(){
   this.position = function(pageIndex) {
     return (pageIndex * 100) + '%';
   };
   this.scrollPage = function(value){
     var floatArea = value - parseInt(value);
-    if(pager.options.useOverscroll && value < 1){
-      return pager.size[0] * (Math.floor(value) + (3 / 4 + floatArea / 4));
-    }else if(pager.options.useOverscroll && value > pager.pageCount - 2){
-      return pager.size[0] * (Math.floor(value) + 1 / 4 * floatArea);
+    if(this.pager.options.useOverscroll && value < 1){
+      return this.pager.size[0] * (Math.floor(value) + (3 / 4 + floatArea / 4));
+    }else if(this.pager.options.useOverscroll && value > this.pager.pageCount - 2){
+      return this.pager.size[0] * (Math.floor(value) + 1 / 4 * floatArea);
     }else{
-      return pager.size[0] * (Math.floor(value) +
+      return this.pager.size[0] * (Math.floor(value) +
         ((floatArea >= 0.5) ? ((-8) * Math.pow(floatArea - 1, 4) + 1) : 8 * Math.pow(floatArea, 4)));
     }
   };
@@ -404,9 +410,9 @@ function ZoomOutPageTransitionMethod(pager){
 }
 
 /** @description The depth page transition method object constructor. Quallity low.
- *  @params {object} pager pager data object to perform transition. does not have to equal with attatched pager.
+ *  @params {object} pager pager data object to perform transition.
  */
-function DepthPageTransitionMethod(pager){
+function DepthPageTransitionMethod(){
   this.position = function(pageIndex) {
     return '0%';
   };
