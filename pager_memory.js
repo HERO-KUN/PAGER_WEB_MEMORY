@@ -25,9 +25,9 @@ function pagermemory_registerPager(name, pagerElement, options){
       animating: false,
       pointerDown: false,
       value: 0,
-      beforePos: 0,
       pointerEventStartPos: [0, 0],
       verticalScrolling: false,
+      horizontalScrolling: false,
       scrollFixed: false
     },
     selectPage: function(target, animate){
@@ -120,7 +120,6 @@ function pagermemory_setup(pager){
     var pointerDown = function(x, y) {
       if(pager.flags.animating) return;
       pager.flags.pointerDown = true;
-      pager.flags.beforePos = pager.object.scrollLeft;
       pager.flags.pointerEventStartPos = [x, y];
     };
 
@@ -129,9 +128,11 @@ function pagermemory_setup(pager){
       if(!pager.flags.pointerDown) return;
       if(!pager.flags.scrollFixed){
         pager.flags.verticalScrolling = Math.abs(x - pager.flags.pointerEventStartPos[0]) < Math.abs(y - pager.flags.pointerEventStartPos[1]);
+        pager.flags.horizontalScrolling = !pager.flags.verticalScrolling;
         pager.flags.scrollFixed = (Math.abs(x - pager.flags.pointerEventStartPos[0]) > 10 || Math.abs(y - pager.flags.pointerEventStartPos[1]) > 10);
       }
-      var value = pager.selected + (1/pager.size[0]*(pager.flags.pointerEventStartPos[0] - x));
+      var positionIndex = (pager.options.type == 'horizontal') ? 1 : 0;
+      var value = pager.selected + (1/pager.size[positionIndex]*(pager.flags.pointerEventStartPos[positionIndex] - ((pager.options.type == 'horizontal') ? y : x)));
       pagermemory_scrollPage(pager, value);
     }
 
@@ -148,9 +149,9 @@ function pagermemory_setup(pager){
         pagermemory_animatePage(pager, pager.selected);
       }
       pager.flags.pointerDown = false;
-      pager.flags.beforePos = 0;
       pager.flags.pointerEventStartPos = [0, 0];
       pager.flags.verticalScrolling = false;
+      pager.flags.horizontalScrolling = false;
       pager.flags.scrollFixed = false;
     }
 
@@ -229,7 +230,11 @@ function pagermemory_notifyPageUpdated(pager){
     each.style.height = '100%';
     each.style.padding = '0';
     each.style.margin = '0';
-    each.style.top = (childIndex * -100) + '%';
+    if(pager.options.type == 'horiontal'){
+      //each.style.left = (childIndex * -100) + '%';
+    }else{
+      each.style.top = (childIndex * -100) + '%';
+    }
     pager.items.push(each);
     childIndex++;
   }
@@ -244,7 +249,11 @@ function pagermemory_notifyPageUpdated(pager){
  */
 function pagermemory_notifyPageTransitionMethodUpdated(pager){
   for(var i = 0; i < pager.items.length; i++){
-    pager.items[i].style.left = pager.pageTransitionMethod.position(i);
+    if(pager.options.type == 'horizontal'){
+      pager.items[i].style.top = 'calc(' + (-100 * i) + '% + ' + pager.pageTransitionMethod.position(i) + ')';
+    }else{
+      pager.items[i].style.left = pager.pageTransitionMethod.position(i);
+    }
   }
   pager.selectPage(pager.getSelectedPageIndex());
 }
@@ -307,11 +316,17 @@ function pagermemory_animatePage(pager, pageIndex){
 function pagermemory_scrollPage(pager, value){
   if(pager.lockPager) return;
   if(value > pager.itemCount - 1 || value < 0) return;
-  if(pager.flags.verticalScrolling) return;
-  pager.object.scrollLeft = pager.pageTransitionMethod.scrollPage(value);
+  if(pager.options.type != 'horizontal' && pager.flags.verticalScrolling) return;
+  if(pager.options.type == 'horizontal' && pager.flags.horizontalScrolling) return;
+  if(pager.options.type == 'horizontal'){
+    pager.object.scrollTop = pager.pageTransitionMethod.scrollPage(value);
+  }else{
+    pager.object.scrollLeft = pager.pageTransitionMethod.scrollPage(value);
+  }
   for(var pageIndex = 0; pageIndex < pager.pageCount; pageIndex++){
+    var translateType = (pager.options.type == 'horizontal') ? 'Y' : 'X';
     pager.items[pageIndex].style.transform =
-      'translateX(' + pager.pageTransitionMethod.translatePage(value, pageIndex) + ') ' +
+      'translate' + translateType + '(' + pager.pageTransitionMethod.translatePage(value, pageIndex) + ') ' +
       'scale(' + pager.pageTransitionMethod.scalePage(value, pageIndex) + ')';
     pager.items[pageIndex].style.opacity = pager.pageTransitionMethod.opacityPage(value, pageIndex);
   }
@@ -341,7 +356,8 @@ function DefaultPageTransitionMethod(){
     return (pageIndex * (100 / PAGERMEMORY_SCROLL_AMOUNT)) + '%';
   };
   this.scrollPage = function(value) {
-    var scrollAmountPerPage = this.pager.size[0]/PAGERMEMORY_SCROLL_AMOUNT;
+    var positionIndex = (this.pager.options.type == 'horizontal') ? 1 : 0;
+    var scrollAmountPerPage = this.pager.size[positionIndex]/PAGERMEMORY_SCROLL_AMOUNT;
     var floatArea = value - parseInt(value);
     if(this.pager.options.useOverscroll && value < 1){
       return scrollAmountPerPage * (Math.floor(value) + (3 / 4 + floatArea / 4));
@@ -374,13 +390,14 @@ function ZoomOutPageTransitionMethod(){
     return (pageIndex * 100) + '%';
   };
   this.scrollPage = function(value){
+    var positionIndex = (this.pager.options.type == 'horizontal') ? 1 : 0;
     var floatArea = value - parseInt(value);
     if(this.pager.options.useOverscroll && value < 1){
-      return this.pager.size[0] * (Math.floor(value) + (3 / 4 + floatArea / 4));
+      return this.pager.size[positionIndex] * (Math.floor(value) + (3 / 4 + floatArea / 4));
     }else if(this.pager.options.useOverscroll && value > this.pager.pageCount - 2){
-      return this.pager.size[0] * (Math.floor(value) + 1 / 4 * floatArea);
+      return this.pager.size[positionIndex] * (Math.floor(value) + 1 / 4 * floatArea);
     }else{
-      return this.pager.size[0] * (Math.floor(value) +
+      return this.pager.size[positionIndex] * (Math.floor(value) +
         ((floatArea >= 0.5) ? ((-8) * Math.pow(floatArea - 1, 4) + 1) : 8 * Math.pow(floatArea, 4)));
     }
   };
