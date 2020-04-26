@@ -6,6 +6,9 @@ You can add or remove pages dynamically but we recommand to use static layouts t
 You can simply swipe on mobile devices or create tab on desktop platform to change current pages.   
 
 ## Changelog
+- 2020.04.26
+  - changed : PageTransitionMethod no more needs pager object to create object. it automatically sets its pager.
+  - fixed : some minor bugs related page delaying
 - 2020.04.25 - PM
   - new feature : PageTransitionMethod! you can now customize page transition animation as you want!
 - 2020.04.25 - AM
@@ -137,7 +140,7 @@ currently, predefined transition methods list is below :
 
 you can change transition method by using pager.setPageTransitionMethod like below
 ```javascript
-mainPager.setPageTransitionMethod(new ZoomOutPageTransitionMethod(mainPager));
+mainPager.setPageTransitionMethod(new ZoomOutPageTransitionMethod());
 ```
 
 #### Other methods
