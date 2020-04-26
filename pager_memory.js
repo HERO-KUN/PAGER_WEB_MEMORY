@@ -263,7 +263,8 @@ function pagermemory_notifyPageTransitionMethodUpdated(pager){
  */
 function pagermemory_notifyPagerResized(pager){
   pager.size = pagermemory_getSize(pager.object);
-  pager.selectPage(pager.getSelectedPageIndex(), false);
+  if(pager.pageTransitionMethod != null)
+    pager.selectPage(pager.getSelectedPageIndex(), false);
 }
 
 /** @description Internal call only. Sets pager page without any animations.
