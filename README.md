@@ -50,6 +50,7 @@ pagermemory_registerPager have 3 parameters :
 - __options__ is the option object of pager. currently, 2 options are available for pager-memory : useOverscroll, usePointerEvent
   - __useOverscroll__ is the flag which enables overscroll fling effect
   - __usePointerEvent__ is the flag which enables pointer(mouse, touch) event. if you want to control pager with only script, disable this option.
+  - __type__ is the flag which defines the type of the pager. if this option is not defined, default is 'horizontal'. you can set this option 'vertical' if this pager scrolls vertically.
 
 #### Functions
 you can call these functions on returned pager object :   
@@ -101,7 +102,8 @@ function DefaultPageTransitionMethod(){
     return (pageIndex * (100 / PAGERMEMORY_SCROLL_AMOUNT)) + '%';
   };
   this.scrollPage = function(value) {
-    var scrollAmountPerPage = this.pager.size[0]/PAGERMEMORY_SCROLL_AMOUNT;
+    var positionIndex = (this.pager.options.type == 'vertical') ? 1 : 0;
+    var scrollAmountPerPage = this.pager.size[positionIndex]/PAGERMEMORY_SCROLL_AMOUNT;
     var floatArea = value - parseInt(value);
     if(this.pager.options.useOverscroll && value < 1){
       return scrollAmountPerPage * (Math.floor(value) + (3 / 4 + floatArea / 4));
@@ -121,7 +123,7 @@ function DefaultPageTransitionMethod(){
       return Math.max(-2 * Math.abs(value - pageIndex) + 1, 0);
     }
   };
-  this.scalePage = function(value){
+  this.scalePage = function(value, pageIndex){
     return '100%';
   }
 }
