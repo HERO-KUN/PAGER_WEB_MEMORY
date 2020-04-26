@@ -94,18 +94,18 @@ you can access these properties to get/set pager data :
 you can create a new transition method object with constructor.
 below code shows the default transition method object.
 ```javascript
-function DefaultPageTransitionMethod(pager){
+function DefaultPageTransitionMethod(){
   var PAGERMEMORY_SCROLL_AMOUNT = 8;
 
   this.position = function(pageIndex){
     return (pageIndex * (100 / PAGERMEMORY_SCROLL_AMOUNT)) + '%';
   };
   this.scrollPage = function(value) {
-    var scrollAmountPerPage = pager.size[0]/PAGERMEMORY_SCROLL_AMOUNT;
+    var scrollAmountPerPage = this.pager.size[0]/PAGERMEMORY_SCROLL_AMOUNT;
     var floatArea = value - parseInt(value);
-    if(pager.options.useOverscroll && value < 1){
+    if(this.pager.options.useOverscroll && value < 1){
       return scrollAmountPerPage * (Math.floor(value) + (3 / 4 + floatArea / 4));
-    }else if(pager.options.useOverscroll && value > pager.pageCount - 2){
+    }else if(this.pager.options.useOverscroll && value > this.pager.pageCount - 2){
       return scrollAmountPerPage * (Math.floor(value) + 1 / 4 * floatArea);
     }else{
       return scrollAmountPerPage * (Math.floor(value) +
@@ -116,8 +116,8 @@ function DefaultPageTransitionMethod(pager){
     return '0%';
   }
   this.opacityPage = function(value, pageIndex) {
-    if(value >= ((pager.options.useOverscroll) ? 1 : 0) &&
-       value <= ((pager.options.useOverscroll) ? pager.pageCount - 2 : pager.pageCount - 1)){
+    if(value >= ((this.pager.options.useOverscroll) ? 1 : 0) &&
+       value <= ((this.pager.options.useOverscroll) ? this.pager.pageCount - 2 : this.pager.pageCount - 1)){
       return Math.max(-2 * Math.abs(value - pageIndex) + 1, 0);
     }
   };
