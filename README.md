@@ -7,11 +7,11 @@ You can simply swipe on mobile devices or create tab on desktop platform to chan
 
 ## Changelog
 - 2020.04.26
+  - added : new pager option : type! you can set pager orientation to vertical if you want, default if horizontal!
   - changed : PageTransitionMethod no more needs pager object to create object. it automatically sets its pager.
   - fixed : some minor bugs related page delaying
-- 2020.04.25 - PM
+- 2020.04.25
   - new feature : PageTransitionMethod! you can now customize page transition animation as you want!
-- 2020.04.25 - AM
   - you can now use multiple listener on one pager
   - pageListener behaviour changed, now triggers only when page index changed
 - 2020.04.24
