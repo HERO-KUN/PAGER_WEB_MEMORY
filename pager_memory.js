@@ -131,8 +131,8 @@ function pagermemory_setup(pager){
         pager.flags.horizontalScrolling = !pager.flags.verticalScrolling;
         pager.flags.scrollFixed = (Math.abs(x - pager.flags.pointerEventStartPos[0]) > 10 || Math.abs(y - pager.flags.pointerEventStartPos[1]) > 10);
       }
-      var positionIndex = (pager.options.type == 'horizontal') ? 1 : 0;
-      var value = pager.selected + (1/pager.size[positionIndex]*(pager.flags.pointerEventStartPos[positionIndex] - ((pager.options.type == 'horizontal') ? y : x)));
+      var positionIndex = (pager.options.type == 'vertical') ? 1 : 0;
+      var value = pager.selected + (1/pager.size[positionIndex]*(pager.flags.pointerEventStartPos[positionIndex] - ((pager.options.type == 'vertical') ? y : x)));
       pagermemory_scrollPage(pager, value);
     }
 
@@ -249,7 +249,7 @@ function pagermemory_notifyPageUpdated(pager){
  */
 function pagermemory_notifyPageTransitionMethodUpdated(pager){
   for(var i = 0; i < pager.items.length; i++){
-    if(pager.options.type == 'horizontal'){
+    if(pager.options.type == 'vertical'){
       pager.items[i].style.top = 'calc(' + (-100 * i) + '% + ' + pager.pageTransitionMethod.position(i) + ')';
     }else{
       pager.items[i].style.left = pager.pageTransitionMethod.position(i);
@@ -316,15 +316,15 @@ function pagermemory_animatePage(pager, pageIndex){
 function pagermemory_scrollPage(pager, value){
   if(pager.lockPager) return;
   if(value > pager.itemCount - 1 || value < 0) return;
-  if(pager.options.type != 'horizontal' && pager.flags.verticalScrolling) return;
-  if(pager.options.type == 'horizontal' && pager.flags.horizontalScrolling) return;
-  if(pager.options.type == 'horizontal'){
+  if(pager.options.type != 'vertical' && pager.flags.verticalScrolling) return;
+  if(pager.options.type == 'vertical' && pager.flags.horizontalScrolling) return;
+  if(pager.options.type == 'vertical'){
     pager.object.scrollTop = pager.pageTransitionMethod.scrollPage(value);
   }else{
     pager.object.scrollLeft = pager.pageTransitionMethod.scrollPage(value);
   }
   for(var pageIndex = 0; pageIndex < pager.pageCount; pageIndex++){
-    var translateType = (pager.options.type == 'horizontal') ? 'Y' : 'X';
+    var translateType = (pager.options.type == 'vertical') ? 'Y' : 'X';
     pager.items[pageIndex].style.transform =
       'translate' + translateType + '(' + pager.pageTransitionMethod.translatePage(value, pageIndex) + ') ' +
       'scale(' + pager.pageTransitionMethod.scalePage(value, pageIndex) + ')';
@@ -356,7 +356,7 @@ function DefaultPageTransitionMethod(){
     return (pageIndex * (100 / PAGERMEMORY_SCROLL_AMOUNT)) + '%';
   };
   this.scrollPage = function(value) {
-    var positionIndex = (this.pager.options.type == 'horizontal') ? 1 : 0;
+    var positionIndex = (this.pager.options.type == 'vertical') ? 1 : 0;
     var scrollAmountPerPage = this.pager.size[positionIndex]/PAGERMEMORY_SCROLL_AMOUNT;
     var floatArea = value - parseInt(value);
     if(this.pager.options.useOverscroll && value < 1){
@@ -390,7 +390,7 @@ function ZoomOutPageTransitionMethod(){
     return (pageIndex * 100) + '%';
   };
   this.scrollPage = function(value){
-    var positionIndex = (this.pager.options.type == 'horizontal') ? 1 : 0;
+    var positionIndex = (this.pager.options.type == 'vertical') ? 1 : 0;
     var floatArea = value - parseInt(value);
     if(this.pager.options.useOverscroll && value < 1){
       return this.pager.size[positionIndex] * (Math.floor(value) + (3 / 4 + floatArea / 4));
