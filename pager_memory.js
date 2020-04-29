@@ -224,7 +224,7 @@ function pagermemory_notifyPageUpdated(pager){
   for (var i = 0; i < childs.length; i++) {
     if(childs[i].nodeType != 1) continue;
     each = childs[i];
-    each.style.overflowY = (pager.options.useOverscroll && (i == 0 || i == childs.length - 1)) ? 'hidden' : 'scroll';
+    each.style.overflowY = (pager.options.useOverscroll && (i == 0 || i == childs.length - 1)) ? 'hidden' : 'auto';
     each.style.position = 'relative';
     each.style.width = '100%';
     each.style.height = '100%';
