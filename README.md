@@ -6,6 +6,8 @@ You can add or remove pages dynamically but we recommand to use static layouts t
 You can simply swipe on mobile devices or create tab on desktop platform to change current pages.   
 
 ## Changelog
+- 2020.05.18
+  - removed old registerPager function and added constructor of Pager.
 - 2020.04.26
   - new pager option : type! you can set pager orientation to vertical if you want, default if horizontal!
   - changed : PageTransitionMethod no more needs pager object to create object. it automatically sets its pager.
@@ -37,14 +39,14 @@ create pager object and its childs(pages) something like this.
 notice that pager object must have its own width and height like % or px etc.   
 pager items(pages) can have its child elements like div, span, etc. so fill the child div of pager as you want.   
 ### javascript
-#### Register Pager
-register pager and store returned object to control pager like below.   
+#### Creating Pager Object
+create pager object and store returned object to control pager like below.   
 ```javascript
 var options = {useOverscroll: true, usePointerEvent: true};   
-var pager = pagermemory_registerPager('main', document.getElementById('main_pager'), options);
+var pager = new Pager('main', document.getElementById('main_pager'), options);
 ```
 
-pagermemory_registerPager have 3 parameters :
+Pager have 3 parameters :
 - __identifier__ is the identifier which must be unique between all pagers in html.
 - __pagerElement__ is the div element of pager
 - __options__ is the option object of pager. currently, 2 options are available for pager-memory : useOverscroll, usePointerEvent
@@ -87,7 +89,7 @@ any other functions are internal call only, so DO NOT call them manually.
 #### Properties
 you can access these properties to get/set pager data :
 - __pager.size__ - readonly number array : first item is width, second item is height. with pixels.
-- __pager.options__ - readonly object : contains options which set when registerPager.
+- __pager.options__ - readonly object : contains options which set when creating Pager object.
 - __pager.pageCount__ - readonly number : returns page count of pager.
 - __pager.lockPager__ - boolean : true if you want to lock all pager event and changing pages, false otherwise.   
 
@@ -152,7 +154,7 @@ var mainPager = pagermemory_getPager('main');
 ```
 
 ### Cautions
-- you can place and register multiple pager in one html.   
+- you can place and create multiple pager object in one html.   
 - notice that user-select:none css style will neccessary if you support pointer events in desktop platform.   
 - placing another pager in pager item is ok, but you must disable all pager's pointer events except one pager. If not, multiple pager are effected when one pointer event occur.
 
