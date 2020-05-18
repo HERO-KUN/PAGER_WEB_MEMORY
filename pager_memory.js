@@ -7,79 +7,76 @@ var PAGERMEMORY_PAGE_ANIMATE_DURATION = 320;
  *  @params {object} options options of pager
  *  @return {object}
  */
-function pagermemory_registerPager(name, pagerElement, options){
-  var pager = {
-    name: name,
-    object: pagerElement,
-    items: [],
-    pageCount: 0,
-    selected: 0,
-    options: options,
-    size: pagermemory_getSize(pagerElement),
-    pageListener: [],
-    scrollListener: [],
-    pageTransitionMethod: null,
-    lockPager: false,
-    flags: {
-      beforeSelected: 0,
-      animating: false,
-      pointerDown: false,
-      value: 0,
-      pointerEventStartPos: [0, 0],
-      verticalScrolling: false,
-      horizontalScrolling: false,
-      scrollFixed: false
-    },
-    selectPage: function(target, animate){
-      pagermemory_selectPage(this, target, animate);
-    },
-    selectNext: function(animate){
-      pagermemory_selectPage(this, this.getSelectedPageIndex() + 1, animate);
-    },
-    selectPrev: function(animate){
-      pagermemory_selectPage(this, this.getSelectedPageIndex() - 1, animate);
-    },
-    getSelectedPageIndex: function(){
-      return ((this.options.useOverscroll) ? this.selected - 1 : this.selected);
-    },
-    addPage: function(position, element){
-      pagermemory_addPage(this, position, element);
-    },
-    removePage: function(position){
-      pagermemory_removePage(this, position);
-    },
-    addPageListener: function(listener){
-      this.pageListener.push(listener);
-    },
-    removePageListener: function(listener){
-      this.pageListener.splice(this.pageListener.indexOf(listener), 1);
-    },
-    removeAllPageListener: function(){
-      this.pageListener = [];
-    },
-    addScrollListener: function(listener){
-      this.scrollListener.push(listener);
-    },
-    removeScrollListener: function(listener){
-      this.scrollListener.splice(this.scrollListener.indexOf(listener), 1);
-    },
-    removeAllScrollListener: function(){
-      this.scrollListener = [];
-    },
-    setPageTransitionMethod: function(method){
-      this.pageTransitionMethod = method;
-      this.pageTransitionMethod.pager = this;
-      pagermemory_notifyPageTransitionMethodUpdated(this);
-    }
+function Pager(name, pagerElement, options){
+  pagermemory_pagers[name] = this;
+  this.name = name;
+  this.object = pagerElement;
+  this.items = [];
+  this.pageCount = 0;
+  this.selected = 0;
+  this.options = options;
+  this.size = pagermemory_getSize(this.object);
+  this.pageListener = [];
+  this.scrollListener = [];
+  this.pageTransitionMethod = null;
+  this.lockPager = false;
+  this.flags = {
+    beforeSelected: 0,
+    animating: false,
+    pointerDown: false,
+    value: 0,
+    pointerEventStartPos: [0, 0],
+    verticalScrolling: false,
+    horizontalScrolling: false,
+    scrollFixed: false
+  };
+  this.selectPage = function(target, animate){
+    pagermemory_selectPage(this, target, animate);
+  },
+  this.selectNext = function(animate){
+    pagermemory_selectPage(this, this.getSelectedPageIndex() + 1, animate);
+  },
+  this.selectPrev = function(animate){
+    pagermemory_selectPage(this, this.getSelectedPageIndex() - 1, animate);
+  },
+  this.getSelectedPageIndex = function(){
+    return ((this.options.useOverscroll) ? this.selected - 1 : this.selected);
+  },
+  this.addPage = function(position, element){
+    pagermemory_addPage(this, position, element);
+  },
+  this.removePage = function(position){
+    pagermemory_removePage(this, position);
+  },
+  this.addPageListener = function(listener){
+    this.pageListener.push(listener);
+  },
+  this.removePageListener = function(listener){
+    this.pageListener.splice(this.pageListener.indexOf(listener), 1);
+  },
+  this.removeAllPageListener = function(){
+    this.pageListener = [];
+  },
+  this.addScrollListener = function(listener){
+    this.scrollListener.push(listener);
+  },
+  this.removeScrollListener = function(listener){
+    this.scrollListener.splice(this.scrollListener.indexOf(listener), 1);
+  },
+  this.removeAllScrollListener = function(){
+    this.scrollListener = [];
+  },
+  this.setPageTransitionMethod = function(method){
+    this.pageTransitionMethod = method;
+    this.pageTransitionMethod.pager = this;
+    pagermemory_notifyPageTransitionMethodUpdated(this);
   }
-  pagermemory_setup(pager);
-  pagermemory_notifyPagerResized(pager);
-  window.addEventListener('resize', function(){pagermemory_notifyPagerResized(pager);});
-  window.addEventListener('load', function(){pagermemory_notifyPagerResized(pager);});
-  pager.setPageTransitionMethod(new DefaultPageTransitionMethod());
-  pager.selectPage(0);
-  pagermemory_pagers[name] = pager;
-  return pagermemory_pagers[name];
+  pagermemory_setup(this);
+  pagermemory_notifyPagerResized(this);
+  window.addEventListener('resize', function(){pagermemory_notifyPagerResized(pagermemory_pagers[name]);});
+  window.addEventListener('load', function(){pagermemory_notifyPagerResized(pagermemory_pagers[name]);});
+  this.setPageTransitionMethod(new DefaultPageTransitionMethod());
+  this.selectPage(0);
 }
 
 /** @description Returns regiestered pager object which has given name.
@@ -222,6 +219,9 @@ function pagermemory_notifyPageUpdated(pager){
   var childIndex = 0;
   pager.items = [];
   for (var i = 0; i < childs.length; i++) {
+    if(childs[i].nodeType != 1) childs[i].remove();
+  }
+  for (var i = 0; i < childs.length; i++) {
     if(childs[i].nodeType != 1) continue;
     each = childs[i];
     each.style.overflowY = (pager.options.useOverscroll && (i == 0 || i == childs.length - 1)) ? 'hidden' : 'auto';
@@ -231,7 +231,7 @@ function pagermemory_notifyPageUpdated(pager){
     each.style.padding = '0';
     each.style.margin = '0';
     if(pager.options.type == 'horiontal'){
-      //each.style.left = (childIndex * -100) + '%';
+      each.style.left = (childIndex * -100) + '%';
     }else{
       each.style.top = (childIndex * -100) + '%';
     }
