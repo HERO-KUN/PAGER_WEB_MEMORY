@@ -410,7 +410,7 @@ function DefaultPageTransitionMethod(){
     }
   };
   this.scalePage = function(value, pageIndex){
-    return '100%';
+    return 1.0;
   }
 }
 
