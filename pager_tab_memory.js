@@ -1,9 +1,17 @@
 /* pager_tab_memory by KouHiro kun */
 
+/**
+ *  @typedef {Object} PagerTab
+ *  @property {HTMLElement} object pager tab element.
+ *  @property {HTMLElement[]} items each pager tab items.
+ *  @property {function} refreshTab reset tab data.
+ *  @property {Pager} parentPager pager which this tab is attached
+ */
+
 /** @description Register pager tab element to script. Returns pager tab object.
- *  @params {element} element element to register
- *  @params {object} parentPager pager object to attatch pager tab
- *  @return {object}
+ *  @class PagerTab
+ *  @params {HTMLElement} element element to register
+ *  @params {Pager} parentPager pager object to attatch pager tab
  */
 function PagerTab(element, parentPager){
   let pagerTab = this;
@@ -14,10 +22,10 @@ function PagerTab(element, parentPager){
   };
 
   this.parentPager = parentPager;
-  this.parentPager.addPageListener(function(index) {
+  this.parentPager.addListener(parentPager.LISTENER_TYPE_PAGE, function(index) {
     pagermemory_tab_toggleTab(pagerTab, index);
   });
-  this.parentPager.addPageSetChangeListener(function(validPageCount) {
+  this.parentPager.addListener(parentPager.LISTENER_TYPE_PAGE_SET, function() {
     pagermemory_tab_setup(pagerTab);
   });
 
@@ -25,23 +33,22 @@ function PagerTab(element, parentPager){
 }
 
 /** @description Internal call only. Sets up pager tab.
- *  @params {object} pagerTab pager tab object to set up
+ *  @params {PagerTab} pagerTab pager tab object to set up
  */
 function pagermemory_tab_setup(pagerTab) {
   let tabObject = pagerTab.object.querySelector('.pagermemory_tab_object');
   tabObject.style.display = 'none';
-  for(var i = 0; i < tabObject.childNodes.length; i++){
-    if(tabObject.childNodes[i].nodeType != 1) tabObject.childNodes[i].remove();
+  for(let i = 0; i < tabObject.childNodes.length; i++){
+    if(tabObject.childNodes[i].nodeType !== 1) tabObject.childNodes[i].remove();
   }
   pagerTab.items = [];
-  var currentlyAddedTabs = pagerTab.object.querySelectorAll('.pagermemory_added_tab');
-  for(var i = 0; i < currentlyAddedTabs.length; i++){
+  let currentlyAddedTabs = pagerTab.object.querySelectorAll('.pagermemory_added_tab');
+  for(let i = 0; i < currentlyAddedTabs.length; i++){
     currentlyAddedTabs[i].remove();
   }
-  for(var i = 0; i < pagerTab.parentPager.validPageCount; i++){
+  for(let i = 0; i < pagerTab.parentPager.validPageCount; i++){
     let index = i;
     let tabEach = tabObject.cloneNode(true);
-    let tabSelector = tabEach.childNodes;
     let titleElements = tabEach.querySelectorAll(' .pagermemory_tab_title');
     let title = pagerTab.parentPager.getPageTitle(i);
 
@@ -63,11 +70,11 @@ function pagermemory_tab_setup(pagerTab) {
 }
 
 /** @description selects specified tab.
- *  @params {object} pagerTab pager tab object to select
+ *  @params {PagerTab} pagerTab pager tab object to select
  *  @params {number} next position to select
  */
 function pagermemory_tab_toggleTab(pagerTab, next) {
-  for(var i = 0; i < pagerTab.items.length; i++){
+  for(let i = 0; i < pagerTab.items.length; i++){
     pagerTab.items[i].childNodes[0].style.display = 'block';
     pagerTab.items[i].childNodes[1].style.display = 'none';
   }
