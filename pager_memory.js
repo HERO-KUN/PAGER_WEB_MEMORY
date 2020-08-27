@@ -266,8 +266,8 @@ function pagermemory_repositionPage(pager) {
  *  @param {number} position position of page
  */
 function pagermemory_getPageTitle(pager, position) {
-  if(position > pager.validPageCount) return null;
-  return pager.items[pagermemory_mapPageIndex(pager, position)].getAttribute('pagermemory_title');
+  if(position > pager.validPageCount || position < 0) return null;
+  return pager.items[pagermemory_mapPageIndex(pager, position)].dataset.pagermemoryTitle;
 }
 
 /** @description Internal call only. Re-positions pages and update items and pageCount.
