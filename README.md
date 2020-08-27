@@ -6,6 +6,9 @@ You can add or remove pages dynamically, but we recommend to use static layouts 
 You can simply swipe on mobile devices or create a tab on a desktop platform to change current pages.   
 
 ## Changelog
+- 2020.08.28
+  - reconstructed script. Changed Pager function constructor into class container, moved some internal methods into class and refactored them.
+  - removed PagerTab.
 - 2020.08.27
   - added jsdoc comments. this will useful if you are using intellij idea.
   - combine all listener codes. pass listener type to addListener, removeListener, removeAllListener to control listeners. 
@@ -79,7 +82,7 @@ you can call these functions on returned pager object :
   - position - number : position where remove to
   - NOTE : pager must have at least 1 page. if you try to remove last one page, error will occur.
 - __pager.addListener(type, listener)__ : adds a page change listener to pager.
-  - type - number : one of these values in pager object -> LISTENER_TYPE_PAGE, LISTENER_TYPE_PAGE_SET, LISTENER_TYPE_SCROLL
+  - type - number : one of these values in pager object -> Pager.LISTENER_TYPE_PAGE, Pager.LISTENER_TYPE_PAGE_SET, Pager.LISTENER_TYPE_SCROLL
   - listener - function : function to execute when page changed.
 - __pager.removeListener(type, listener)__ : removes a page change listener from pager.
   - type - number : same as addListener's type.
@@ -102,45 +105,55 @@ you can access these properties to get/set pager data :
 you can set custom transition method object to pager.
 below code shows the zoom out transition method object.
 ```javascript
-function ZoomOutPageTransitionMethod(){
-  this.position = function(pageIndex) {
+/** @augments {PageTransitionMethod} */
+class ZoomOutPageTransitionMethod {
+
+  constructor() {
+    this.parent = undefined;
+  }
+
+  position(pageIndex) {
     return (pageIndex * 100) + '%';
-  };
-  this.scrollPage = function(value){
-    var positionIndex = (this.pager.options.type == 'vertical') ? 1 : 0;
+  }
+
+  scrollPage(value) {
+    var positionIndex = (this.parent.options.type == 'vertical') ? 1 : 0;
     var floatArea = value - parseInt(value);
-    if(this.pager.options.useOverscroll && value < 1){
-      return this.pager.size[positionIndex] * (Math.floor(value) + (3 / 4 + floatArea / 4));
-    }else if(this.pager.options.useOverscroll && value > this.pager.pageCount - 2){
-      return this.pager.size[positionIndex] * (Math.floor(value) + 1 / 4 * floatArea);
+    if(this.parent.options.useOverscroll && value < 1){
+        return this.parent.size[positionIndex] * (Math.floor(value) + (3 / 4 + floatArea / 4));
+    }else if(this.parent.options.useOverscroll && value > this.parent.pageCount - 2){
+        return this.parent.size[positionIndex] * (Math.floor(value) + 1 / 4 * floatArea);
     }else{
-      return this.pager.size[positionIndex] * (Math.floor(value) +
-        ((floatArea >= 0.5) ? ((-8) * Math.pow(floatArea - 1, 4) + 1) : 8 * Math.pow(floatArea, 4)));
+        return this.parent.size[positionIndex] * (Math.floor(value) +
+           ((floatArea >= 0.5) ? ((-8) * Math.pow(floatArea - 1, 4) + 1) : 8 * Math.pow(floatArea, 4)));
     }
-  };
-  this.translatePage = function(value, pageIndex) {
+  }
+
+  translatePage(value, pageIndex) {
     return '0%';
   }
-  this.scalePage = function(value, pageIndex){
-    var floatArea = value - Math.floor(value);
-    if(floatArea < 0.2){
-      return 1 - floatArea/4;
-    }else if(floatArea < 0.8){
-      return 0.95;
-    }else{
-      return 0.95 + (floatArea - 0.8)/4;
-    }
-  }
-  this.opacityPage = function(value, pageIndex){
+
+  opacityPage(value, pageIndex) {
     var floatArea = value - Math.floor(value);
     if(floatArea < 0.3){
-      return 1 - floatArea * 1.5;
+        return 1 - floatArea * 1.5;
     }else if(floatArea < 0.7){
-      return 0.55;
+        return 0.55;
     }else{
-      return 0.55 + (floatArea - 0.7) * 1.5;
+        return 0.55 + (floatArea - 0.7) * 1.5;
     }
-  };
+  }
+
+  scalePage(value, pageIndex){
+    var floatArea = value - Math.floor(value);
+    if(floatArea < 0.2){
+        return 1 - floatArea/4;
+    }else if(floatArea < 0.8){
+        return 0.95;
+    }else{
+        return 0.95 + (floatArea - 0.8)/4;
+    }
+  }
 }
 ```
 the custom transition method must contain these properties :
@@ -154,34 +167,6 @@ you can change transition method by using pager.setPageTransitionMethod like bel
 ```javascript
 mainPager.setPageTransitionMethod(new ZoomOutPageTransitionMethod());
 ```
-
-## Pager Tab Usage
-you can create your own tabs, but here is some simple tabs pre-defined!   
-if you are creating same tab objects to each page, using this one may be ok.
-
-### html
-```html
-<div id="main_pager_tab">
-  <div class="pagermemory_tab_object some_other_css_classes">
-    <div class="some_css_classes"><!-- normal tab -->
-      <div class="pagermemory_tab_title some_other_normal_tab_css_classes"></div>
-    </div>
-    <div class="some_css_classes"><!-- selected tab -->
-      <div class="pagermemory_tab_title some_other_selected_tab_css_classes"></div>
-    </div>
-  </div>
-</div>
-```
-default form of pager tab is like this. you can customize tab style of normal tab(some_other_normal_tab_css_classes) and selected tab(some_other_selected_tab_css_classes).   
-script will duplicate pagermemory_tab_object div and position those divs horizontally.   
-normal tab will display only that tab is not selected, and selected tab will display only when that tab is selected.   
-
-### javascript
-```javascript
-var mainPagerTab = new PagerTab(document.getElementById('main_pager_tab'), mainPager);
-```
-notice that this tab must needs Pager object! you can attach the tab to mainPager using above code.
-
 
 ## Cautions
 - you can place and create multiple pager object in one html.   
