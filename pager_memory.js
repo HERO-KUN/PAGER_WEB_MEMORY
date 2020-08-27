@@ -1,515 +1,586 @@
 /* pager_memory.js by KouHiro kun */
 
-const PAGERMEMORY_PAGE_ANIMATE_DURATION = 320;
+/** @class
+ *  @classdesc Pager class which returns completed pager object. */
+class Pager{
+  /**
+   * @constructor
+   * @param {HTMLElement} pagerElement
+   * @param {PagerOptions} options
+   */
+  constructor(pagerElement, options) {
+    let pager = this;
 
-/** @description Pager object.
- *  @typedef {Object} Pager
- *  @property {HTMLElement} object - pager element.
- *  @property {HTMLDivElement[]} items - page items.
- *  @property {number} pageCount - raw page count includes overscroll dummy pages.
- *  @property {number} validPageCount - count of valid pages.
- *  @property {number} selected - current selected item position. excludes dummy pages.
- *  @property {{useOverscroll: boolean, usePointerEvent: boolean, type:string}} options - pager options.
- *  @property {number[]} size size of pager. changes when window.resize.
- *  @property {function[][]} listeners 2-dimension array which holds all types of listeners.
- *  @property {function[]} pageListener list of page changed listeners.
- *  @property {function[]} scrollListener list of scroll changed listeners.
- *  @property {function[]} pageSetChangedListener list of page data set changed listener.
- *  @property {PageTransitionMethod} pageTransitionMethod
- *  @property {boolean} lockPager set this true to lock pager, false otherwise.
- *  @property {PagerFlags} flags flag object related with this pager.
- *  @property {function(target: number, animate: boolean)} selectPage selects target page. 0 is first page.
- *  @property {function(animate: boolean)} selectNext selects next page.
- *  @property {function(animate: boolean)} selectPrev selects previous page.
- *  @property {function()} getSelectedPageIndex get valid selected page index. 0 is first page.
- *  @property {function(position: number, element: HTMLDivElement)} addPage adds div element into pager with given position.
- *  @property {function(position: number)} removePage removes page with given position.
- *  @property {function(position: number)} getPageTitle returns page title which is declared in html with pagermemory_title attribute.
- *  @property {function(type: number, listener: function)} addListener adds listener with given type. use pager.LISTENER_TYPE_* const to type field.
- *  @property {function(type: number, listener: function)} removeListener removes listener with given type. use pager.LISTENER_TYPE_* const to type field.
- *  @property {function(type: number)} removeAllListener removes all listeners matches given type. use pager.LISTENER_TYPE_* const to type field.
- *  @property {function(method: PageTransitionMethod)} setPageTransitionMethod sets page transition method to pager. default is DefaultPageTransitionMethod.
- *  @property {number} LISTENER_TYPE_PAGE readonly, use this to add or remove listeners.
- *  @property {number} LISTENER_TYPE_PAGE_SET readonly, use this to add or remove listeners.
- *  @property {number} LISTENER_TYPE_SCROLL readonly, use this to add or remove listeners.
- */
+    /** @type {HTMLElement}
+     *  @description pager element */
+    this.object = pagerElement;
 
-/**
- *  @description PagerFlags object.
- *  @typedef {Object} PagerFlags
- *  @property {number} beforeSelected readonly. used when page changed. after performing listener action, this value will set to current selected item.
- *  @property {boolean} animating readonly. true if pager is animating, false otherwise.
- *  @property {boolean} pointerDown readonly. true if pointer is down, false otherwise.
- *  @property {number} value readonly. pager scroll amount. if this value is 1.5, this pager is displaying between first page and second page.
- *  @property {number[]} pointerEventStartPos readonly. stores start position of pointer event.
- *  @property {boolean} verticalScrolling readonly. stores that user scrolls vertically(this property is useful when pager type is horizontal)
- *  @property {boolean} horizontalScrolling readonly. stores that user scrolls horizontally(this property is useful when pager type is vertical)
- *  @property {boolean} scrollFixed readonly. stores that user scroll axis(v, h) is fixed and do not apply any further scroll axis change.
- */
+    /** @type {HTMLDivElement[]}
+     *  @description page items */
+    this.items = [];
 
-/**
- *  @class Pager
- *  @param {HTMLElement} pagerElement target pager element to register
- *  @param {object} options options of pager
- */
-function Pager(pagerElement, options){
-  let pager = this;
-  this.LISTENER_TYPE_PAGE = 0;
-  this.LISTENER_TYPE_PAGE_SET = 1;
-  this.LISTENER_TYPE_SCROLL = 2;
-  this.object = pagerElement;
-  this.items = [];
-  this.pageCount = 0;
-  this.validPageCount = 0;
-  this.selected = 0;
-  this.options = options;
-  this.size = pagermemory_getSize(this.object);
-  this.pageListener = [];
-  this.scrollListener = [];
-  this.pageSetChangedListener = [];
-  this.listeners = [this.pageListener, this.pageSetChangedListener, this.scrollListener];
-  this.pageTransitionMethod = undefined;
-  this.lockPager = false;
-  this.flags = {
-    beforeSelected: 0,
-    animating: false,
-    pointerDown: false,
-    value: 0,
-    pointerEventStartPos: [0, 0],
-    verticalScrolling: false,
-    horizontalScrolling: false,
-    scrollFixed: false
-  };
-  this.selectPage = function(target, animate){
-    pagermemory_selectPage(this, target, animate);
-  };
-  this.selectNext = function(animate){
-    pagermemory_selectPage(this, this.getSelectedPageIndex() + 1, animate);
-  };
-  this.selectPrev = function(animate){
-    pagermemory_selectPage(this, this.getSelectedPageIndex() - 1, animate);
-  };
-  this.getSelectedPageIndex = function(){
-    return ((this.options.useOverscroll) ? this.selected - 1 : this.selected);
-  };
-  this.addPage = function(position, element){
-    pagermemory_addPage(this, position, element);
-  };
-  this.removePage = function(position){
-    pagermemory_removePage(this, position);
-  };
-  this.getPageTitle = function(position){
-    return pagermemory_getPageTitle(this, position);
-  }
-  this.addListener = function(type, listener){
-    this.listeners[type].push(listener);
-  };
-  this.removeListener = function(type, listener){
-    this.listeners[type].splice(this.listeners[type].indexOf(listener), 1);
-  };
-  this.removeAllListener = function(type){
-    this.listeners[type] = [];
-  };
-  this.setPageTransitionMethod = function(method){
-    this.pageTransitionMethod = method;
-    this.pageTransitionMethod.pager = this;
-    pagermemory_notifyPageTransitionMethodUpdated(this);
-  };
-  pagermemory_setup(this);
-  pagermemory_notifyPagerResized(this);
-  window.addEventListener('resize', function(){pagermemory_notifyPagerResized(pager);});
-  window.addEventListener('load', function(){pagermemory_notifyPagerResized(pager);});
-  this.setPageTransitionMethod(new DefaultPageTransitionMethod());
-  this.selectPage(0, false);
-}
+    /** @type {number}
+     *  @description raw page count includes overscroll dummy pages. */
+    this.pageCount = 0;
 
-/** @description Internal call only. Selects page.
- *  @param {Pager} pager pager object to select page
- *  @param {number} target target page index
- *  @param {boolean} animate enable page translate animation
- */
-function pagermemory_selectPage(pager, target, animate){
-  if(pager.lockPager) return;
-  if(target < 0) return;
+    /** @type {number}
+     *  @description count of valid pages. */
+    this.validPageCount = 0;
 
-  if(target > pager.validPageCount - 1) return;
-  let position = pagermemory_mapPageIndex(pager, target);
-  if(animate) pagermemory_animatePage(pager, position);
-  else pagermemory_setPage(pager, position);
-}
+    /** @type {number}
+     *  @description current selected item position. includes overscroll dummy pages. */
+    this.selected = 0;
 
-/** @description Internal call only. Setup the pager.
- *  @param {Pager} pager pager object returned by Pager constructor or getPager function
- */
-function pagermemory_setup(pager){
-  pager.object.style.overflow = 'hidden';
-  if(pager.options.useOverscroll){
-    pager.object.insertBefore(document.createElement('div'), pager.object.childNodes[0]);
-    pager.object.appendChild(document.createElement('div'));
-  }
-  pagermemory_notifyPageUpdated(pager);
+    /** @type {PagerOptions}
+     *  @description count of valid pages. */
+    this.options = options;
 
-  if(pager.options.usePointerEvent){
+    /** @type {number[]}
+     *  @description size of pager. refreshes when window.resize */
+    this.size = this.getSize(this.object);
 
-    let pointerDown = function(x, y) {
-      if(pager.flags.animating) return;
-      pager.flags.pointerDown = true;
-      pager.flags.pointerEventStartPos = [x, y];
+    /** @type {function(position: number)[]}
+     *  @description list of page changed listeners. */
+    this.pageListener = [];
+
+    /** @type {function(value: number)[]}
+     *  @description list of scroll changed listeners. */
+    this.scrollListener = [];
+
+    /** @type {function(count: number)[]}
+     *  @description list of page set changed listeners. called when addPage() or removePage(). */
+    this.pageSetChangedListener = [];
+
+    /** @type {((function(number))[])[]}
+     *  @description holds all type of listeners. */
+    this.listeners = [this.pageListener, this.pageSetChangedListener, this.scrollListener];
+
+    /** @type {PageTransitionMethod}
+     *  @description page transition method which defines page position, transition, etc. */
+    this.pageTransitionMethod = undefined;
+
+    /** @type {boolean}
+     *  @description set this true to lock pager, false otherwise. */
+    this.lockPager = false;
+
+    /** @type {Object}
+     *  @description flags object related with this pager. */
+    this.flags = {
+      beforeSelected: 0,
+      animating: false,
+      pointerDown: false,
+      value: 0,
+      pointerEventStartPos: [0, 0],
+      verticalScrolling: false,
+      horizontalScrolling: false,
+      scrollFixed: false
     };
 
-    let pointerMove = function(x, y) {
-      if(pager.flags.animating) return;
-      if(!pager.flags.pointerDown) return;
-      if(!pager.flags.scrollFixed){
-        pager.flags.verticalScrolling = Math.abs(x - pager.flags.pointerEventStartPos[0]) < Math.abs(y - pager.flags.pointerEventStartPos[1]);
-        pager.flags.horizontalScrolling = !pager.flags.verticalScrolling;
-        pager.flags.scrollFixed = (Math.abs(x - pager.flags.pointerEventStartPos[0]) > 10 || Math.abs(y - pager.flags.pointerEventStartPos[1]) > 10);
-      }
-      let positionIndex = (pager.options.type === 'vertical') ? 1 : 0;
-      let value = pager.selected + (1/pager.size[positionIndex]*(pager.flags.pointerEventStartPos[positionIndex] - ((pager.options.type === 'vertical') ? y : x)));
-      pagermemory_scrollPage(pager, value);
-    }
+    pager.setUp();
+    pager.notifyPagerResized();
+    window.addEventListener('resize', function () {
+      pager.notifyPagerResized();
+    });
+    window.addEventListener('load', function () {
+      pager.notifyPagerResized();
+    });
+    pager.setPageTransitionMethod(new DefaultPageTransitionMethod());
+    pager.selectPage(0, false);
+  }
 
-    let pointerUp = function(){
-      if(pager.flags.animating) return;
+  /** @public
+   *  @return {void}
+   *  @param {number} target target position of page.
+   *  @param {boolean} animate true if want to animate page transition, false otherwise.
+   *  @description selects page with given target position. */
+  selectPage(target, animate){
+    if(this.lockPager) return;
+    if(target < 0) return;
 
-      let MAX_PAGE_INDEX = pagermemory_mapPageIndex(pager, pager.validPageCount - 1);
-      let MIN_PAGE_INDEX = pagermemory_mapPageIndex(pager, 0);
-      let AMOUNT = pager.selected - pager.flags.value;
-      if(AMOUNT > 0.1 && pager.selected !== MIN_PAGE_INDEX){
-        pagermemory_animatePage(pager, pager.selected - 1);
-      }else if(AMOUNT < -0.1 && pager.selected !== MAX_PAGE_INDEX){
-        pagermemory_animatePage(pager, pager.selected + 1);
+    if(target > this.validPageCount - 1) return;
+    let position = this.mapPageIndex(target);
+    if(animate) this.animatePage(position);
+    else this.setPage(position);
+  }
+
+  /** @public
+   *  @return {void}
+   *  @param {boolean} animate true if want to animate page transition, false otherwise.
+   *  @description selects next page of current selected page. */
+  selectNext(animate){
+    this.selectPage(this.getSelectedPageIndex() + 1, animate);
+  }
+
+  /** @public
+   *  @return {void}
+   *  @param {boolean} animate true if want to animate page transition, false otherwise.
+   *  @description selects previous page of current selected page. */
+  selectPrev(animate){
+    this.selectPage(this.getSelectedPageIndex() - 1, animate);
+  }
+
+  /** @public
+   *  @return {number}
+   *  @description returns current selected page. excludes dummy page. */
+  getSelectedPageIndex(){
+    return ((this.options.useOverscroll) ? this.selected - 1 : this.selected);
+  }
+
+  /** @public
+   *  @return {void}
+   *  @param {number} position target position to insert in.
+   *  @param {HTMLDivElement} element target page to insert.
+   *  @description adds div element into pager with given position. */
+  addPage(position, element){
+    let pager = this;
+    if(position < 0) return;
+    if(position > pager.validPageCount - 1) {
+      if(!pager.options.useOverscroll){
+        pager.object.appendChild(element);
       }else{
-        pagermemory_animatePage(pager, pager.selected);
+        pager.object.insertBefore(element, pager.object.lastChild);
       }
-      pager.flags.pointerDown = false;
-      pager.flags.pointerEventStartPos = [0, 0];
-      pager.flags.verticalScrolling = false;
-      pager.flags.horizontalScrolling = false;
-      pager.flags.scrollFixed = false;
-    }
-
-    pager.object.addEventListener('mousedown', function(event) { pointerDown(event.pageX, event.pageY) });
-    pager.object.addEventListener('mousemove', function(event) { pointerMove(event.pageX, event.pageY); });
-    window.addEventListener('mouseup', function() { pointerUp() });
-
-    pager.object.addEventListener('touchstart', function(event) { pointerDown(event.touches[0].clientX, event.touches[0].clientY); });
-    pager.object.addEventListener('touchmove', function(event) { pointerMove(event.touches[0].clientX, event.touches[0].clientY); });
-    window.addEventListener('touchend', function() { pointerUp(); });
-
-  }
-}
-
-/** @description Internal call only. Adds page before given position.
- *  @param {Pager} pager pager object to add a page
- *  @param {number} position position where insert to
- *  @param {HTMLElement} element page object which must be div element
- */
-function pagermemory_addPage(pager, position, element){
-  if(position < 0) return;
-  if(position > pager.validPageCount - 1) {
-    if(!pager.options.useOverscroll){
-      pager.object.appendChild(element);
     }else{
-      pager.object.insertBefore(element, pager.object.lastChild);
+      pager.object.insertBefore(element, pager.items[pager.mapPageIndex(position)]);
     }
-  }else{
-    pager.object.insertBefore(element, pager.items[pagermemory_mapPageIndex(pager, position)]);
+    pager.notifyPageUpdated();
+    pager.repositionPage();
+
+    if(position > pager.getSelectedPageIndex())
+      pager.setPage(pager.selected);
+    else
+      pager.setPage(pager.selected + 1);
   }
-  pagermemory_notifyPageUpdated(pager);
-  pagermemory_repositionPage(pager);
 
-  if(position > pager.getSelectedPageIndex())
-    pagermemory_setPage(pager, pager.selected);
-  else
-    pagermemory_setPage(pager, pager.selected + 1);
-}
+  /** @public
+   *  @return {void}
+   *  @param {number} position target position to remove.
+   *  @description remove page from pager with given position. */
+  removePage(position){
+    let pager = this;
+    if(pager.validPageCount === 1) {
+      console.error("ERROR : pager must have at least 1 page. you are trying to remove last one page.");
+      return;
+    }
+    if(position < 0) return;
+    if(position > pager.validPageCount - 1) return;
 
-/** @description Internal call only. Removes given position's page.
- *  @param {Pager} pager pager object to remove a page
- *  @param {number} position position where remove to
- */
-function pagermemory_removePage(pager, position){
-  if(pager.validPageCount === 1) {
-    console.error("ERROR : pager must have at least 1 page. you are trying to remove last one page.");
-    return;
+    pager.items[this.mapPageIndex(position)].remove();
+    this.notifyPageUpdated();
+    this.repositionPage();
+
+    if(position >= pager.getSelectedPageIndex())
+      this.setPage(pager.selected);
+    else
+      this.setPage(pager.selected - 1);
   }
-  if(position < 0) return;
-  if(position > pager.validPageCount - 1) return;
 
-  pager.items[pagermemory_mapPageIndex(pager, position)].remove();
-  pagermemory_notifyPageUpdated(pager);
-  pagermemory_repositionPage(pager);
+  /** @public
+   *  @return {null|string}
+   *  @param {number} position target position of page.
+   *  @description returns page title which is declared in html with data-pagermemory-title attribute. */
+  getPageTitle(position) {
+    let pager = this;
+    if(position > pager.validPageCount || position < 0) return null;
+    return pager.items[this.mapPageIndex(position)].dataset.pagermemoryTitle;
+  }
 
-  if(position >= pager.getSelectedPageIndex())
-    pagermemory_setPage(pager, pager.selected);
-  else
-    pagermemory_setPage(pager, pager.selected - 1);
-}
+  /** @public
+   *  @return {void}
+   *  @param {number} type one of Pager.LISTENER_TYPE_PAGE, Pager.LISTENER_TYPE_PAGE_SET, Pager.LISTENER_TYPE_SCROLL.
+   *  @param {function(i: number)} listener listener function.
+   *  @description adds listener with given type. */
+  addListener(type, listener){
+    this.listeners[type].push(listener);
+  }
 
-/** @description Internal call only. repositions pages after page set changed.
- *  @param {Pager} pager pager object to reposition
- */
-function pagermemory_repositionPage(pager) {
-  for(let i = 0; i < pager.items.length; i++){
-    if(pager.options.type === 'vertical'){
-      pager.items[i].style.top = 'calc(' + (-100 * i) + '% + ' + pager.pageTransitionMethod.position(i) + ')';
-    }else{
-      pager.items[i].style.left = pager.pageTransitionMethod.position(i);
+  /** @public
+   *  @return {void}
+   *  @param {number} type one of Pager.LISTENER_TYPE_PAGE, Pager.LISTENER_TYPE_PAGE_SET, Pager.LISTENER_TYPE_SCROLL.
+   *  @param {function(i: number)} listener listener function.
+   *  @description removes listener with given type. */
+  removeListener(type, listener){
+    this.listeners[type].splice(this.listeners[type].indexOf(listener), 1);
+  }
+
+  /** @public
+   *  @return {void}
+   *  @param {number} type one of Pager.LISTENER_TYPE_PAGE, Pager.LISTENER_TYPE_PAGE_SET, Pager.LISTENER_TYPE_SCROLL.
+   *  @description removes all listeners with given type. */
+  removeAllListener(type){
+    this.listeners[type] = [];
+  }
+
+  /** @public
+   *  @return {void}
+   *  @param {PageTransitionMethod} method
+   *  @description sets page transition method to pager. default is DefaultPageTransitionMethod. */
+  setPageTransitionMethod(method){
+    this.pageTransitionMethod = method;
+    this.pageTransitionMethod.parent = this;
+    this.notifyPageTransitionMethodUpdated(this);
+  }
+
+  /** @private
+   *  @return {void}
+   *  @description Internal call only. Setup the pager. */
+  setUp(){
+    let pager = this;
+    pager.object.style.overflow = 'hidden';
+    if(pager.options.useOverscroll){
+      pager.object.insertBefore(document.createElement('div'), pager.object.childNodes[0]);
+      pager.object.appendChild(document.createElement('div'));
+    }
+    this.notifyPageUpdated();
+
+    if(pager.options.usePointerEvent){
+
+      let pointerDown = function(x, y) {
+        if(pager.flags.animating) return;
+        pager.flags.pointerDown = true;
+        pager.flags.pointerEventStartPos = [x, y];
+      };
+
+      let pointerMove = function(x, y) {
+        if(pager.flags.animating) return;
+        if(!pager.flags.pointerDown) return;
+        if(!pager.flags.scrollFixed){
+          pager.flags.verticalScrolling = Math.abs(x - pager.flags.pointerEventStartPos[0]) < Math.abs(y - pager.flags.pointerEventStartPos[1]);
+          pager.flags.horizontalScrolling = !pager.flags.verticalScrolling;
+          pager.flags.scrollFixed = (Math.abs(x - pager.flags.pointerEventStartPos[0]) > 10 || Math.abs(y - pager.flags.pointerEventStartPos[1]) > 10);
+        }
+        let positionIndex = (pager.options.type === 'vertical') ? 1 : 0;
+        let value = pager.selected + (1/pager.size[positionIndex]*(pager.flags.pointerEventStartPos[positionIndex] - ((pager.options.type === 'vertical') ? y : x)));
+        pager.scrollPage(value);
+      }
+
+      let pointerUp = function(){
+        if(pager.flags.animating) return;
+
+        let MAX_PAGE_INDEX = pager.mapPageIndex(pager.validPageCount - 1);
+        let MIN_PAGE_INDEX = pager.mapPageIndex(0);
+        let AMOUNT = pager.selected - pager.flags.value;
+        if(AMOUNT > 0.1 && pager.selected !== MIN_PAGE_INDEX){
+          pager.animatePage(pager.selected - 1);
+        }else if(AMOUNT < -0.1 && pager.selected !== MAX_PAGE_INDEX){
+          pager.animatePage(pager.selected + 1);
+        }else{
+          pager.animatePage(pager.selected);
+        }
+        pager.flags.pointerDown = false;
+        pager.flags.pointerEventStartPos = [0, 0];
+        pager.flags.verticalScrolling = false;
+        pager.flags.horizontalScrolling = false;
+        pager.flags.scrollFixed = false;
+      }
+
+      pager.object.addEventListener('mousedown', function(event) { pointerDown(event.pageX, event.pageY) });
+      pager.object.addEventListener('mousemove', function(event) { pointerMove(event.pageX, event.pageY); });
+      window.addEventListener('mouseup', function() { pointerUp() });
+
+      pager.object.addEventListener('touchstart', function(event) { pointerDown(event.touches[0].clientX, event.touches[0].clientY); });
+      pager.object.addEventListener('touchmove', function(event) { pointerMove(event.touches[0].clientX, event.touches[0].clientY); });
+      window.addEventListener('touchend', function() { pointerUp(); });
+
     }
   }
-}
 
-/** @description Internal call only. Returns page title of pager items.
- *  @param {Pager} pager pager object to get titles
- *  @param {number} position position of page
- */
-function pagermemory_getPageTitle(pager, position) {
-  if(position > pager.validPageCount || position < 0) return null;
-  return pager.items[pagermemory_mapPageIndex(pager, position)].dataset.pagermemoryTitle;
-}
-
-/** @description Internal call only. Re-positions pages and update items and pageCount.
- *  @param {Pager} pager pager object to notify page updated
- */
-function pagermemory_notifyPageUpdated(pager){
-  let children = pager.object.childNodes;
-  let childIndex = 0;
-  pager.items = [];
-  for (let i = 0; i < children.length; i++) {
-    if(children[i].nodeType !== 1) children[i].remove();
-  }
-  for (let i = 0; i < children.length; i++) {
-    if(children[i].nodeType !== 1) continue;
-    let each = children[i];
-    each.style.overflowY = (pager.options.useOverscroll && (i === 0 || i === children.length - 1)) ? 'hidden' : 'auto';
-    each.style.position = 'relative';
-    each.style.width = '100%';
-    each.style.height = '100%';
-    each.style.padding = '0';
-    each.style.margin = '0';
-    if(pager.options.type === 'vertical'){
-      each.style.left = (childIndex * -100) + '%';
-    }else{
-      each.style.top = (childIndex * -100) + '%';
+  /** @private
+   *  @return {void}
+   *  @description Internal call only. repositions pages after page set changed. */
+  repositionPage() {
+    let pager = this;
+    for(let i = 0; i < pager.items.length; i++){
+      if(pager.options.type === 'vertical'){
+        pager.items[i].style.top = 'calc(' + (-100 * i) + '% + ' + pager.pageTransitionMethod.position(i) + ')';
+      }else{
+        pager.items[i].style.left = pager.pageTransitionMethod.position(i);
+      }
     }
-    pager.items.push(each);
-    childIndex++;
   }
-  pager.pageCount = childIndex;
-  pager.validPageCount = childIndex - (pager.options.useOverscroll ? 2 : 0);
-  for(let i = 0; i < pager.items.length; i++){
-    pager.items[i].style.zIndex = (pager.items.length - i).toString();
-  }
-  for(let i = 0; i < pager.pageSetChangedListener.length; i++){
-    pager.pageSetChangedListener[i](pager.validPageCount);
-  }
-}
 
-/** @description Internal call only. Re-positions pages according to current page transition method.
- *  @param {Pager} pager pager object to reposition pages
- */
-function pagermemory_notifyPageTransitionMethodUpdated(pager){
-  pagermemory_repositionPage(pager);
-  pager.selectPage(pager.getSelectedPageIndex(), false);
-}
+  /** @private
+   *  @return {void}
+   *  @description Internal call only. Re-positions pages and update items and pageCount. */
+  notifyPageUpdated(){
+    let pager = this;
+    let children = pager.object.childNodes;
+    let childIndex = 0;
+    pager.items = [];
+    for (let i = 0; i < children.length; i++) {
+      if(children[i].nodeType !== 1) children[i].remove();
+    }
+    for (let i = 0; i < children.length; i++) {
+      if(children[i].nodeType !== 1) continue;
+      let each = children[i];
+      each.style.overflowY = (pager.options.useOverscroll && (i === 0 || i === children.length - 1)) ? 'hidden' : 'auto';
+      each.style.position = 'relative';
+      each.style.width = '100%';
+      each.style.height = '100%';
+      each.style.padding = '0';
+      each.style.margin = '0';
+      if(pager.options.type === 'vertical'){
+        each.style.left = (childIndex * -100) + '%';
+      }else{
+        each.style.top = (childIndex * -100) + '%';
+      }
+      pager.items.push(each);
+      childIndex++;
+    }
+    pager.pageCount = childIndex;
+    pager.validPageCount = childIndex - (pager.options.useOverscroll ? 2 : 0);
+    for(let i = 0; i < pager.items.length; i++){
+      pager.items[i].style.zIndex = (pager.items.length - i).toString();
+    }
+    for(let i = 0; i < pager.pageSetChangedListener.length; i++){
+      pager.pageSetChangedListener[i](pager.validPageCount);
+    }
+  }
 
-/** @description Internal call only. Reset the pager.size property and select the selected item again.
- *  @param {Pager} pager pager object to notify
- */
-function pagermemory_notifyPagerResized(pager){
-  pager.size = pagermemory_getSize(pager.object);
-  if(pager.pageTransitionMethod !== undefined)
+  /** @private
+   *  @return {void}
+   *  @param {Pager} pager pager object to reposition pages
+   *  @description Internal call only. Re-positions pages according to current page transition method. */
+  notifyPageTransitionMethodUpdated(pager){
+    this.repositionPage();
     pager.selectPage(pager.getSelectedPageIndex(), false);
-}
+  }
 
-/** @description Internal call only. Sets pager page without any animations.
- *  @param {Pager} pager pager object to set page
- *  @param {number} pageIndex target page index
- */
-function pagermemory_setPage(pager, pageIndex){
-  if(pager.lockPager) return;
-  pagermemory_scrollPage(pager, pageIndex);
-  pager.selected = pageIndex;
-  pagermemory_performPageListener(pager);
-}
+  /** @private
+   *  @return {void}
+   *  @description Internal call only. Reset the pager.size property and select the selected item again. */
+  notifyPagerResized(){
+    let pager = this;
+    pager.size = this.getSize(pager.object);
+    if(pager.pageTransitionMethod !== undefined)
+      pager.selectPage(pager.getSelectedPageIndex(), false);
+  }
 
-/** @description Internal call only. Sets pager page with animation.
- *  @param {Pager} pager pager object to animate
- *  @param {number} pageIndex target page index
- */
-function pagermemory_animatePage(pager, pageIndex){
-  if(pager.lockPager) return;
-  if(pager.flags.animating) return;
-  pager.flags.animating = true;
-  pagermemory_animate(pager.flags.value, pageIndex, PAGERMEMORY_PAGE_ANIMATE_DURATION,
-    function(animatedValue){
-      pagermemory_scrollPage(pager, animatedValue);
-    },
-    function(){
-      pager.flags.animating = false;
+  /** @private
+   *  @return {void}
+   *  @param {number} pageIndex target page index
+   *  @description Internal call only. Sets pager page without any animations. */
+  setPage(pageIndex){
+    let pager = this;
+    if(pager.lockPager) return;
+    this.scrollPage(pageIndex);
+    pager.selected = pageIndex;
+    this.performPageListener();
+  }
+
+  /** @private
+   *  @return {void}
+   *  @param {number} pageIndex target page index
+   *  @description Internal call only. Sets pager page with animation. */
+  animatePage(pageIndex){
+    let pager = this;
+    const PAGERMEMORY_PAGE_ANIMATE_DURATION = 320;
+
+    if(pager.lockPager) return;
+    if(pager.flags.animating) return;
+    pager.flags.animating = true;
+    pager.animateValue(pager.flags.value, pageIndex, PAGERMEMORY_PAGE_ANIMATE_DURATION,
+        function(animatedValue){
+          pager.scrollPage(animatedValue);
+        },
+        function(){
+          pager.flags.animating = false;
+        }
+    );
+    pager.selected = pageIndex;
+    pager.performPageListener();
+  }
+
+  /** @private
+   *  @return {void}
+   *  @param {number} value target scroll value
+   *  @description Internal call only. Scrolls pager to target value. target value can be 0 ~ pager.pageCount - 1. float values available.*/
+  scrollPage(value){
+    let pager = this;
+    if(pager.lockPager) return;
+    if(value > pager.pageCount - 1 || value < 0) return;
+    if(pager.options.type !== 'vertical' && pager.flags.verticalScrolling) return;
+    if(pager.options.type === 'vertical' && pager.flags.horizontalScrolling) return;
+    if(pager.options.type === 'vertical'){
+      pager.object.scrollTop = pager.pageTransitionMethod.scrollPage(value);
+    }else{
+      pager.object.scrollLeft = pager.pageTransitionMethod.scrollPage(value);
     }
-  );
-  pager.selected = pageIndex;
-  pagermemory_performPageListener(pager);
-}
-
-/** @description Internal call only. Scrolls pager to target value. target value can be 0 ~ pager.pageCount - 1. float values available.
- *  @param {Pager} pager pager object to scroll
- *  @param {number} value target scroll value
- */
-function pagermemory_scrollPage(pager, value){
-  if(pager.lockPager) return;
-  if(value > pager.pageCount - 1 || value < 0) return;
-  if(pager.options.type !== 'vertical' && pager.flags.verticalScrolling) return;
-  if(pager.options.type === 'vertical' && pager.flags.horizontalScrolling) return;
-  if(pager.options.type === 'vertical'){
-    pager.object.scrollTop = pager.pageTransitionMethod.scrollPage(value);
-  }else{
-    pager.object.scrollLeft = pager.pageTransitionMethod.scrollPage(value);
-  }
-  for(let pageIndex = 0; pageIndex < pager.pageCount; pageIndex++){
-    let translateType = (pager.options.type === 'vertical') ? 'Y' : 'X';
-    pager.items[pageIndex].style.transform =
-      'translate' + translateType + '(' + pager.pageTransitionMethod.translatePage(value, pageIndex) + ') ' +
-      'scale(' + pager.pageTransitionMethod.scalePage(value, pageIndex) + ')';
-    pager.items[pageIndex].style.opacity = pager.pageTransitionMethod.opacityPage(value, pageIndex).toString();
-  }
-  for(let i = 0; i < pager.scrollListener.length; i++){
-    pager.scrollListener[i](pager.options.useOverscroll ? value-1 : value);
-  }
-  pager.flags.value = value;
-}
-
-/** @description Internal call only. Resets pager items' style.pointerEvents property.
- *  @param {Pager} pager pager object to reset pointerEvents property
- */
-function pagermemory_resetPagerItemPointerEvents(pager){
-  for(let i = 0; i < pager.items.length; i++){
-    if(i === pager.selected) pager.items[i].style.pointerEvents = 'all';
-    else pager.items[i].style.pointerEvents = 'none';
-  }
-}
-
-/**
- * @description Internal call only. Performs Page Listener.
- * @param {Pager} pager pager object to perform listener
- */
-function pagermemory_performPageListener(pager){
-  if(pager.selected !== pager.flags.beforeSelected){
-    for(let i = 0; i < pager.pageListener.length; i++){
-      pager.pageListener[i](pager.getSelectedPageIndex());
+    for(let pageIndex = 0; pageIndex < pager.pageCount; pageIndex++){
+      let translateType = (pager.options.type === 'vertical') ? 'Y' : 'X';
+      pager.items[pageIndex].style.transform =
+          'translate' + translateType + '(' + pager.pageTransitionMethod.translatePage(value, pageIndex) + ') ' +
+          'scale(' + pager.pageTransitionMethod.scalePage(value, pageIndex) + ')';
+      pager.items[pageIndex].style.opacity = pager.pageTransitionMethod.opacityPage(value, pageIndex).toString();
     }
-    pager.flags.beforeSelected = pager.selected;
+    for(let i = 0; i < pager.scrollListener.length; i++){
+      pager.scrollListener[i](pager.options.useOverscroll ? value-1 : value);
+    }
+    pager.flags.value = value;
   }
-  pagermemory_resetPagerItemPointerEvents(pager);
+
+  /** @private
+   *  @return {void}
+   *  @description Internal call only. Performs Page Listener. */
+  performPageListener(){
+    let pager = this;
+    if(pager.selected !== pager.flags.beforeSelected){
+      for(let i = 0; i < pager.pageListener.length; i++){
+        pager.pageListener[i](pager.getSelectedPageIndex());
+      }
+      pager.flags.beforeSelected = pager.selected;
+    }
+    for(let i = 0; i < pager.items.length; i++){
+      if(i === pager.selected) pager.items[i].style.pointerEvents = 'all';
+      else pager.items[i].style.pointerEvents = 'none';
+    }
+  }
+
+  /** @private
+   *  @return {void}
+   *  @param {number} from start value
+   *  @param {number} to end value
+   *  @param {number} duration animate duration
+   *  @param {function(i: number)} step function that called every frame
+   *  @param {function()} finish function that called when animate finished
+   *  @description Internal call only. Animates value linearly. */
+  animateValue(from, to, duration, step, finish){
+    if(from === to)  { finish(); return; }
+    let progress = 0;
+    let animatedValue = from;
+    let DELTA = Math.abs(to - from);
+    let DIRECTION = (to - from > 0) ? 1 : -1;
+    let STEP_LENGTH_MS = 10;
+    let STEP_LENGTH = DELTA/(duration/STEP_LENGTH_MS);
+    let animate = function(){
+      if(duration <= progress * STEP_LENGTH_MS) {
+        step(to);
+        finish();
+        return;
+      }
+      animatedValue = from + DIRECTION * STEP_LENGTH * progress;
+      step(animatedValue);
+      progress++;
+      setTimeout(animate, STEP_LENGTH_MS);
+    }
+    animate();
+  }
+
+  /** @private
+   *  @return {number}
+   *  @param {number} position position of pager which will be mapped
+   *  @description Internal call only. Returns mapped page index related with pager.options.useOverscroll */
+  mapPageIndex(position){
+    let pager = this;
+    return position + (pager.options.useOverscroll ? 1 : 0);
+  }
+
+  /** @private
+   *  @return {number[]}
+   *  @param {HTMLElement} element target element
+   *  @description Internal call only. Returns size of element. */
+  getSize(element){
+    let rect = element.getBoundingClientRect();
+    if(rect.width !== 0 && rect.height !== 0){
+      return [rect.width, rect.height];
+    } else {
+      return [rect.right - rect.left, rect.bottom - rect.top];
+    }
+  }
+
+  static LISTENER_TYPE_PAGE = 0;
+  static LISTENER_TYPE_PAGE_SET = 1;
+  static LISTENER_TYPE_SCROLL = 2;
+
 }
 
-/**
- *  @description
- *  @typedef {Object} PageTransitionMethod
- *  @property {Pager} pager pager object which this method is attached.
- *  @property {function(pageIndex: number): string} position function which returns page positions. must include unit.
- *  @property {function(value: number): number} scrollPage function which returns page scroll positions. must not include unit.
- *  @property {function(value: number, pageIndex: number): string} translatePage function which returns page translate value. must include unit.
- *  @property {function(value: number, pageIndex: number): number} opacityPage function which returns page opacity value. must be in 0 ~ 1.
- *  @property {function(value: number, pageIndex: number): number} scalePage function which returns page scale value. 1.0 is 100% size, must not include unit.
- */
+class PagerOptions{
+  /** @typedef {"vertical" | "horizontal"} PagerType */
+  /**
+   * @param {boolean} useOverscroll true if use overscroll, false otherwise.
+   * @param {boolean} usePointerEvent true if use any pointer events, false otherwise.
+   * @param {PagerType} type pager type. one of "vertical", "horizontal".
+   */
+  constructor(useOverscroll, usePointerEvent, type){
+    this.useOverscroll = useOverscroll;
+    this.usePointerEvent = usePointerEvent;
+    this.type = type;
+  }
+}
+
+/** @description dummy type which holds all custom page transition methods. use augments jsdoc parameter.
+ *  @typedef {Object} PageTransitionMethod */
 
 /** @description The default page transition method object constructor. You can change this using pager.setPageTransitionMethod()
  *  @class DefaultPageTransitionMethod
- *  @augments {PageTransitionMethod}
- *  @type {PageTransitionMethod}
- */
-function DefaultPageTransitionMethod(){
-  const PAGERMEMORY_SCROLL_AMOUNT = 8;
+ *  @augments {PageTransitionMethod} */
+class DefaultPageTransitionMethod {
 
-  this.pager = undefined;
-  this.position = function(pageIndex){
-    return (pageIndex * (100 / PAGERMEMORY_SCROLL_AMOUNT)) + '%';
-  };
-  this.scrollPage = function(value) {
-    let positionIndex = (this.pager.options.type === 'vertical') ? 1 : 0;
-    let scrollAmountPerPage = this.pager.size[positionIndex]/PAGERMEMORY_SCROLL_AMOUNT;
+  PAGERMEMORY_SCROLL_AMOUNT = 8;
+
+  constructor() {
+    /** @type {Pager}
+     *  @description pager object which this method is attached. */
+    this.parent = undefined;
+  }
+
+  /** @return {string}
+   *  @param {number} pageIndex index of page
+   *  @description function which returns page positions. must include unit. */
+  position(pageIndex) {
+    return (pageIndex * (100 / this.PAGERMEMORY_SCROLL_AMOUNT)) + '%';
+  }
+
+  /** @return {number}
+   *  @param {number} value scroll value
+   *  @description function which returns page scroll positions. must not include unit. */
+  scrollPage(value) {
+    let positionIndex = (this.parent.options.type === 'vertical') ? 1 : 0;
+    let scrollAmountPerPage = this.parent.size[positionIndex] / this.PAGERMEMORY_SCROLL_AMOUNT;
     let floatArea = value - Math.floor(value);
-    if(this.pager.options.useOverscroll && value < 1){
+    if (this.parent.options.useOverscroll && value < 1) {
       return scrollAmountPerPage * (Math.floor(value) + (3 / 4 + floatArea / 4));
-    }else if(this.pager.options.useOverscroll && value > this.pager.pageCount - 2){
+    } else if (this.parent.options.useOverscroll && value > this.parent.pageCount - 2) {
       return scrollAmountPerPage * (Math.floor(value) + 1 / 4 * floatArea);
-    }else{
+    } else {
       return scrollAmountPerPage * (Math.floor(value) +
-        ((floatArea >= 0.5) ? ((-128) * Math.pow(floatArea - 1, 8) + 1) : 128 * Math.pow(floatArea, 8)));
+          ((floatArea >= 0.5) ? ((-128) * Math.pow(floatArea - 1, 8) + 1) : 128 * Math.pow(floatArea, 8)));
     }
-  };
-  this.translatePage = function() {
+  }
+
+  /** @return {string}
+   *  @param {number} value scroll value
+   *  @param {number} pageIndex target page index
+   *  @description function which returns page translate value. must include unit. */
+  translatePage(value, pageIndex) {
     return '0%';
   }
-  this.opacityPage = function(value, pageIndex) {
-    let validPageMin = ((this.pager.options.useOverscroll) ? 1 : 0);
-    let validPageMax = ((this.pager.options.useOverscroll) ? this.pager.pageCount - 2 : this.pager.pageCount - 1);
-    if(value >= validPageMin && value <= validPageMax){
+
+  /** @return {number}
+   *  @param {number} value scroll value
+   *  @param {number} pageIndex target page index
+   *  @description function which returns page opacity value. must be in 0 ~ 1. */
+  opacityPage(value, pageIndex) {
+    let validPageMin = ((this.parent.options.useOverscroll) ? 1 : 0);
+    let validPageMax = ((this.parent.options.useOverscroll) ? this.parent.pageCount - 2 : this.parent.pageCount - 1);
+    if (value >= validPageMin && value <= validPageMax) {
       return Math.max(-2 * Math.abs(value - pageIndex) + 1, 0);
-    }else if(value < validPageMin){
+    } else if (value < validPageMin) {
       return Math.max(-1 * pageIndex + 2, 0);
-    }else if(value > validPageMax){
+    } else if (value > validPageMax) {
       return Math.max(pageIndex - validPageMax + 1, 0);
-    }else{
+    } else {
       // NOT HAPPENED
       return 0;
     }
-  };
-  this.scalePage = function(){
+  }
+
+  /** @return {number}
+   *  @param {number} value scroll value
+   *  @param {number} pageIndex target page index
+   *  @description function which returns page scale value. 1.0 is 100% size, must not include unit. */
+  scalePage(value, pageIndex){
     return 1.0;
   }
-}
 
-/** @description Internal call only. Animates value linearly.
- *  @param {number} from start value
- *  @param {number} to end value
- *  @param {number} duration animate duration
- *  @param {function} step function that called every frame
- *  @param {function} finish function that called when animate finished
- */
-function pagermemory_animate(from, to, duration, step, finish){
-  if(from === to)  { finish(); return; }
-  let progress = 0;
-  let animatedValue = from;
-  let DELTA = Math.abs(to - from);
-  let DIRECTION = (to - from > 0) ? 1 : -1;
-  let STEP_LENGTH_MS = 10;
-  let STEP_LENGTH = DELTA/(duration/STEP_LENGTH_MS);
-  let animate = function(){
-    if(duration <= progress * STEP_LENGTH_MS) {
-      step(to);
-      finish();
-      return;
-    }
-    animatedValue = from + DIRECTION * STEP_LENGTH * progress;
-    step(animatedValue);
-    progress++;
-    setTimeout(animate, STEP_LENGTH_MS);
-  }
-  animate();
-}
-
-/** @description Internal call only. Returns mapped page index related with pager.options.useOverscroll
- *  @param {Pager} pager pager object to follow overscroll option
- *  @param {number} position position of pager which will be mapped
- */
-function pagermemory_mapPageIndex(pager, position){
-  return position + (pager.options.useOverscroll ? 1 : 0);
-}
-
-/** @description Internal call only. Returns size of element.
- *  @param {HTMLElement} element target element
- *  @return {number[]}
- */
-function pagermemory_getSize(element){
-  let rect = element.getBoundingClientRect();
-  if(rect.width !== 0 && rect.height !== 0){
-    return [rect.width, rect.height];
-  } else {
-    return [rect.right - rect.left, rect.bottom - rect.top];
-  }
 }
