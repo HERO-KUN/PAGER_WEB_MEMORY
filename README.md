@@ -1,11 +1,14 @@
 # PAGER - web_memory
 ## Intro
 Pager is the view which handles paging layouts.   
-Inspired by android.support.v4.view.ViewPager, but it is more simillar with Google Play Store mobile application's pager.   
-You can add or remove pages dynamically but we recommand to use static layouts to paging.   
-You can simply swipe on mobile devices or create tab on desktop platform to change current pages.   
+Inspired by android.support.v4.view.ViewPager, but it is more similar with Google Play Store mobile application's pager.   
+You can add or remove pages dynamically, but we recommend to use static layouts to paging.   
+You can simply swipe on mobile devices or create a tab on a desktop platform to change current pages.   
 
 ## Changelog
+- 2020.08.27
+  - added jsdoc comments. this will useful if you are using intellij idea.
+  - combine all listener codes. pass listener type to addListener, removeListener, removeAllListener to control listeners. 
 - 2020.05.23
   - removed getPager function and pager name parameter in Pager constructor.
   - added pager_tab_memory script. you can use this script to create some tabs!
@@ -17,8 +20,8 @@ You can simply swipe on mobile devices or create tab on desktop platform to chan
   - changed : PageTransitionMethod no more needs pager object to create object. it automatically sets its pager.
   - fixed : some minor bugs related page delaying
 - 2020.04.25
-  - new feature : PageTransitionMethod! you can now customize page transition animation as you want!
-  - you can now use multiple listener on one pager
+  - new features : PageTransitionMethod! you can now customize page transition animation as you want!
+  - you can now use multiple listeners on one pager
   - pageListener behaviour changed, now triggers only when page index changed
 - 2020.04.24
   - added lockPager property and scrollListener
@@ -29,14 +32,14 @@ You can simply swipe on mobile devices or create tab on desktop platform to chan
 
 ## Usage
 ### html
-create pager object and its childs(pages) something like this.
+create pager object and its children(pages) something like this.
 
 ```html
 <div id="main_pager" style="width: 100%; height: 50%;">   
-  <div pagermemory_title="Title 0">Page0 - Some Content here</div>   
-  <div pagermemory_title="Title 1">Page1 - Some Content here</div>   
-  <div pagermemory_title="Title 2">Page2 - Some Content here</div>   
-  <div pagermemory_title="Title 3">Page3 - Some Content here</div>   
+  <div data-pagermemory-title="Title 0">Page0 - Some Content here</div>   
+  <div data-pagermemory-title="Title 1">Page1 - Some Content here</div>   
+  <div data-pagermemory-title="Title 2">Page2 - Some Content here</div>   
+  <div data-pagermemory-title="Title 3">Page3 - Some Content here</div>   
 </div>   
 ```
 
@@ -46,8 +49,8 @@ pager items(pages) can have its child elements like div, span, etc. so fill the 
 #### Creating Pager Object
 create pager object and store returned object to control pager like below.   
 ```javascript
-var options = {useOverscroll: true, usePointerEvent: true};   
-var pager = new Pager(document.getElementById('main_pager'), options);
+let options = {useOverscroll: true, usePointerEvent: true};   
+let pager = new Pager(document.getElementById('main_pager'), options);
 ```
 
 Pager constructor have 2 parameters :
@@ -75,17 +78,14 @@ you can call these functions on returned pager object :
 - __pager.removePage(position)__ : removes a given position's page
   - position - number : position where remove to
   - NOTE : pager must have at least 1 page. if you try to remove last one page, error will occur.
-- __pager.addPageListener(listener)__ : adds a page change listener to pager.
+- __pager.addListener(type, listener)__ : adds a page change listener to pager.
+  - type - number : one of these values in pager object -> LISTENER_TYPE_PAGE, LISTENER_TYPE_PAGE_SET, LISTENER_TYPE_SCROLL
   - listener - function : function to execute when page changed.
-- __pager.removePageListener(listener)__ : removes a page change listener from pager.
+- __pager.removeListener(type, listener)__ : removes a page change listener from pager.
+  - type - number : same as addListener's type.
   - listener - function : function to remove from pager.
-- __pager.removeAllPageListener()__ : removes all page listeners from pager.
-- __pager.addScrollListener(listener)__ : adds a scroll change listener to pager.
-  - listener - function : function to execute when pager scroll changed.
-  - NOTE - you can use this function to create page indicator!
-- __pager.removeScrollListener(listener)__ : removes a scroll change listener from pager.
-  - listener - function : function to remove from pager.
-- __pager.removeAllScrollListener()__ : removes all scroll listeners from pager.
+- __pager.removeAllListener(type)__ : removes all page listeners from pager.
+  - type - number : same as addListener's type.
 - __pager.setPageTransitionMethod(method)__ : set custom transition method to pager.
   - method - object : object that contains custom transition methods. see below section for more information.
 
@@ -143,7 +143,7 @@ function ZoomOutPageTransitionMethod(){
   };
 }
 ```
-the custom transition method must contains these properties :
+the custom transition method must contain these properties :
 - __position__ (pageIndex) : function which returns initial position of each pages. must return a value with unit.
 - __scrollPage__ (value) : function which returns scrollLeft value of pager. returned value from this function will sets pager.scrollLeft property. must return a value without unit.
 - __translatePage__ (value, pageIndex) : function which returns translateX value of each pages. must return a value with unit.
@@ -185,9 +185,9 @@ notice that this tab must needs Pager object! you can attach the tab to mainPage
 
 ## Cautions
 - you can place and create multiple pager object in one html.   
-- notice that user-select:none css style will neccessary if you support pointer events in desktop platform.   
+- notice that user-select:none css style will necessary if you support pointer events in desktop platform.   
 - placing another pager in pager item is ok, but you must disable all pager's pointer events except one pager. If not, multiple pager are effected when one pointer event.
 
 ## Supported browsers
 currently, pager-web-memory only support chrome browser fully.   
-other browsers are not tested.
+other browsers aren't tested.
